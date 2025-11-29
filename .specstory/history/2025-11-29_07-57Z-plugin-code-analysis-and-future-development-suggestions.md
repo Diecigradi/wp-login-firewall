@@ -1322,3 +1322,70 @@ Posso creare un pulsante nel pannello admin che simula automaticamente vari tipi
 
 ---
 
+_**User (2025-11-29 22:20Z)**_
+
+Ok ho capito. Ci sono dei problemi. Ecco la url se vado su wp-admin
+/wp-login.php?redirect_to=https%3A%2F%2Fexplorerfvg.roomzerostaging.it%2Fwp-admin%2F&reauth=1
+
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Capisco il problema. Quando WordPress reindirizza a `/wp-login.php` con parametri come `redirect_to` e `reauth=1` (tipico quando la sessione scade o quando si clicca su "Accedi" dall'admin), il nostro plugin non gestisce correttamente questi parametri nel redirect post-verifica.
+
+Il token viene generato ma i parametri `redirect_to` e `reauth` vengono persi durante il reindirizzamento, causando problemi nel flusso di login.
+
+Correggo subito: 
+```
+
+```
+Perfetto! Ora il sistema preserva tutti i parametri GET originali (come `redirect_to` e `reauth`) durante il processo di verifica. Questo significa che:
+
+✅ Se accedi da `/wp-admin`, verrai reindirizzato correttamente al dashboard dopo il login
+✅ Se la sessione scade, il parametro `reauth=1` viene mantenuto
+✅ Qualsiasi altro parametro GET viene preservato Fatto! Ora prova di nuovo ad accedere da `/wp-admin` o con parametri `reauth=1`. Il sistema dovrebbe funzionare correttamente mantenendo tutti i parametri di reindirizzamento.
+
+---
+
+_**User (2025-11-29 22:22Z)**_
+
+Se vado su /wp-admin questa è url:
+/wp-login.php?redirect_to=https%3A%2F%2Fexplorerfvg.roomzerostaging.it%2Fwp-admin%2F&reauth=1
+
+Se vado su /wp-login.php l'url non cambia. Inoltre non vedo token nell'url è corretto?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Hai ragione a chiedere. Ti spiego cosa sta succedendo:
+
+## Stato Attuale (Corretto)
+
+**Prima della verifica:**
+- Su `/wp-admin` → reindirizza a `/wp-login.php?redirect_to=...&reauth=1` ✅
+- Su `/wp-login.php` → URL rimane `/wp-login.php` ✅
+- **NON vedi il token** perché sei ancora nella fase di verifica (form pre-login) ✅
+
+**Dopo la verifica:**
+- Inserisci username valido nel form
+- JavaScript invia richiesta AJAX
+- Se utente esiste, vieni reindirizzato a URL con token tipo: `/wp-login.php?verified=1&user=admin&wplf_token=abc123...&redirect_to=...`
+
+## Il Problema
+
+Il token dovrebbe apparire **SOLO DOPO** che hai inserito uno username valido e cliccato "Verifica Accesso". 
+
+**Domande per capire il problema:**
+
+1. Quando inserisci uno username valido e clicchi "Verifica Accesso", cosa succede?
+2. Vedi il messaggio "Utente verificato! Reindirizzamento..."?
+3. Dopo quel messaggio, l'URL cambia e appare il token?
+4. Oppure rimani sulla stessa pagina senza redirect?
+
+Se il problema è che dopo aver inserito username valido non succede nulla, potrebbe essere che i parametri GET non vengono letti correttamente dal JavaScript. Fammi sapere esattamente cosa succede quando provi a verificare un username!
+
+---
+

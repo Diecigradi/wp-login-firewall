@@ -111,6 +111,9 @@ class WPLoginFirewall {
         
         $username = sanitize_text_field($_POST['wplf_username']);
         
+        // Recupera i parametri GET passati dal JavaScript
+        $current_params = isset($_POST['current_params']) ? $_POST['current_params'] : array();
+        
         // Verifica se è un'email o username
         if (is_email($username)) {
             $user = get_user_by('email', $username);
@@ -131,12 +134,12 @@ class WPLoginFirewall {
             // Costruisci l'URL mantenendo tutti i parametri originali
             $redirect_url = wp_login_url();
             
-            // Mantieni i parametri esistenti come redirect_to e reauth
-            if (isset($_GET['redirect_to'])) {
-                $redirect_url = add_query_arg('redirect_to', urlencode($_GET['redirect_to']), $redirect_url);
+            // Mantieni i parametri passati dal JavaScript (dalla pagina corrente)
+            if (!empty($current_params['redirect_to'])) {
+                $redirect_url = add_query_arg('redirect_to', urlencode($current_params['redirect_to']), $redirect_url);
             }
-            if (isset($_GET['reauth'])) {
-                $redirect_url = add_query_arg('reauth', sanitize_text_field($_GET['reauth']), $redirect_url);
+            if (!empty($current_params['reauth'])) {
+                $redirect_url = add_query_arg('reauth', sanitize_text_field($current_params['reauth']), $redirect_url);
             }
             
             // Aggiungi i nostri parametri

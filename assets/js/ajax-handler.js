@@ -13,6 +13,14 @@
         
         console.log('WP Login Firewall: Form found, attaching event listener');
         
+        // Funzione per ottenere parametri GET dall'URL corrente
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        
         preLoginForm.on('submit', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -39,13 +47,20 @@
             
             console.log('WP Login Firewall: Sending AJAX request');
             
+            // Raccogli i parametri GET attuali per passarli al server
+            var currentParams = {
+                redirect_to: getUrlParameter('redirect_to'),
+                reauth: getUrlParameter('reauth')
+            };
+            
             $.ajax({
                 type: 'POST',
                 url: wplf_ajax.ajax_url,
                 data: {
                     action: 'wplf_verify_user',
                     wplf_username: username,
-                    nonce: wplf_ajax.nonce
+                    nonce: wplf_ajax.nonce,
+                    current_params: currentParams
                 },
                 success: function(response) {
                     console.log('WP Login Firewall: Response received', response);
