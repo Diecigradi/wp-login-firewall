@@ -17,8 +17,8 @@ class CustomLoginSecurity {
     
     public function enqueue_scripts() {
         wp_enqueue_script('jquery');
-        wp_enqueue_style('cls-styles', plugin_dir_url(__DIR__) . 'css/pre-login-form.css');
-        wp_enqueue_script('cls-ajax', plugin_dir_url(__DIR__) . 'js/ajax-handler.js', array('jquery'), '1.0', true);
+        wp_enqueue_style('cls-styles', plugin_dir_url(__DIR__) . 'assets/css/pre-login-form.css');
+        wp_enqueue_script('cls-ajax', plugin_dir_url(__DIR__) . 'assets/js/ajax-handler.js', array('jquery'), '1.0', true);
         wp_localize_script('cls-ajax', 'cls_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('cls_nonce')

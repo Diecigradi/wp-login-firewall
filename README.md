@@ -51,12 +51,13 @@ Un plugin WordPress che aggiunge un layer di sicurezza aggiuntivo al processo di
 
 ```
 wp-secure-login/
-├── css/
-│   └── pre-login-form.css       # Stili del form pre-login
-├── js/
-│   └── ajax-handler.js          # Gestione AJAX
+├── assets/
+│   ├── css/
+│   │   └── pre-login-form.css   # Stili del form
+│   └── js/
+│       └── ajax-handler.js      # Gestione AJAX
 ├── includes/
-│   └── class-custom-login-security.php # Classe principale del plugin
+│   └── class-custom-login-security.php # Classe principale
 ├── custom-login-security.php    # File principale del plugin
 ├── README.md                     # Questo file
 └── LICENSE                       # Licenza GPL-2.0
