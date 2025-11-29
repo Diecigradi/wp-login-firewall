@@ -2133,3 +2133,45 @@ E fammi sapere cosa dice!
 
 ---
 
+_**User (2025-11-29 23:05Z)**_
+
+Non funziona ancora in modo corretto. Voglio rivedere tutto il plugin ripartendo dalla prima versione
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Hai ragione, abbiamo fatto troppe modifiche sovrapposte. Torniamo alla versione funzionante iniziale e ripartiamo da lì in modo più pulito. Vedo che il commit `49a88f7` era quello dove disabilitavamo il rate limiting per i test e funzionava. Andiamo ancora più indietro al commit `c713aa9` che aveva l'interfaccia personalizzata funzionante. Vediamo cosa c'era in quel momento: Perfetto! In quella versione usava `login_message` e funzionava. Il problema è sorto dopo. Facciamo un reset completo e ripristiniamo i file principali a una versione più semplice e pulita: Vedo il problema! Abbiamo rimosso completamente la funzione `show_pre_login_form` che inseriva il form nel DOM tramite PHP. Ora il form viene creato solo da JavaScript, ma questo crea conflitti. 
+
+Ripristiniamo l'approccio originale che funzionava (PHP con `login_message`): 
+```
+
+```
+Ora semplifichiamo il JavaScript rimuovendo la parte che crea il form dinamicamente: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ora abbiamo ripristinato l'approccio originale più semplice:
+
+✅ **PHP inserisce il form** tramite `login_message` filter
+✅ **CSS nasconde il loginform** con regole inline quando necessario  
+✅ **JavaScript semplificato** che solo gestisce gli eventi AJAX
+
+**Testa ora il flusso completo:**
+1. Vai su `/wp-login.php` → dovresti vedere il form di verifica
+2. Inserisci username → verifica AJAX
+3. Redirect a `/wp-login.php?verified=1&user=...&wplf_token=...` → dovresti vedere il form WordPress con username precompilato
+4. Inserisci password → login
+
+Dimmi se funziona tutto! 🎯
+
+---
+

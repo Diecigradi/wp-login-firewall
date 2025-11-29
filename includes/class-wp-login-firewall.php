@@ -51,6 +51,26 @@ class WPLoginFirewall {
             add_filter('login_username', function($username) {
                 return esc_attr(rawurldecode($_GET['user']));
             });
+            // Aggiungi script per precompilare e gestire il campo username
+            add_action('login_footer', function() {
+                $username = esc_js(rawurldecode($_GET['user']));
+                ?>
+                <script type="text/javascript">
+                jQuery(document).ready(function($) {
+                    // Precompila il campo username
+                    $('#user_login').val('<?php echo $username; ?>');
+                    
+                    // Rimuovi readonly quando si prova a modificare
+                    $('#user_login').on('focus click', function() {
+                        $(this).prop('readonly', false);
+                    });
+                    
+                    // Focus automatico sul campo password
+                    $('#user_pass').focus();
+                });
+                </script>
+                <?php
+            });
         } else {
             // Altrimenti, nascondi il form di login standard e mostra il nostro
             add_action('login_head', function() {
