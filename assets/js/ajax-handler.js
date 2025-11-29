@@ -1,7 +1,8 @@
 (function($) {
     'use strict';
     
-    $(document).ready(function() {
+    // Funzione per inizializzare il form
+    function initializeForm() {
         console.log('WP Login Firewall: Script loaded');
         console.log('WP Login Firewall: Looking for form #pre-login-form');
         console.log('WP Login Firewall: All forms found:', $('form').length);
@@ -10,9 +11,9 @@
         var preLoginForm = $('#pre-login-form');
         
         if (preLoginForm.length === 0) {
-            console.log('WP Login Firewall: Form not found');
+            console.log('WP Login Firewall: Form not found, will retry in 100ms');
             console.log('WP Login Firewall: All IDs in page:', $('[id]').map(function() { return this.id; }).get());
-            return;
+            return false;
         }
         
         console.log('WP Login Firewall: Form found, attaching event listener');
@@ -98,5 +99,29 @@
             
             return false;
         });
+        
+        return true; // Form inizializzato con successo
+    }
+    
+    // Prova a inizializzare il form, riprova fino a 10 volte se non trovato
+    $(document).ready(function() {
+        var attempts = 0;
+        var maxAttempts = 10;
+        
+        function tryInit() {
+            if (initializeForm()) {
+                console.log('WP Login Firewall: Initialized successfully');
+                return;
+            }
+            
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(tryInit, 100);
+            } else {
+                console.error('WP Login Firewall: Failed to find form after', maxAttempts, 'attempts');
+            }
+        }
+        
+        tryInit();
     });
 })(jQuery);

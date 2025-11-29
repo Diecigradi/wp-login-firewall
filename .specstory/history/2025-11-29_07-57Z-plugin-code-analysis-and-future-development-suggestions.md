@@ -1507,3 +1507,54 @@ Così possiamo capire perché il form non viene trovato!
 
 ---
 
+_**User (2025-11-29 22:34Z)**_
+
+Contenuto console:
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+ajax-handler.js?ver=1.0:5 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:7 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:8 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:13 WP Login Firewall: Form not found
+ajax-handler.js?ver=1.0:14 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Ora vedo il problema chiaramente:
+
+```
+WP Login Firewall: Pre-login container exists: 0
+```
+
+Il container `#pre-login-container` **NON esiste** nella pagina! Questo significa che l'hook `login_message` non viene eseguito o il nostro form non viene renderizzato.
+
+Guardando gli ID presenti, vedo che c'è `loginform` (il form standard di WordPress) ma non il nostro `pre-login-container`.
+
+Il problema è che l'hook `login_message` potrebbe non funzionare in tutti i contesti. Cambio approccio e uso `login_form` che è più affidabile, ma in modo diverso per evitare la duplicazione precedente: 
+```
+
+```
+
+```
+
+```
+Ho cambiato strategia:
+
+1. **Uso `login_footer`** invece di `login_message` - questo hook viene sempre eseguito
+2. **Aggiungo uno script inline** che sposta il form nella posizione corretta usando jQuery
+3. Il form viene inserito nel footer ma poi spostato prima del login form nascosto
+
+Questo garantisce che il form sia sempre presente nel DOM, indipendentemente dai parametri URL. Fatto! Ora ricarica la pagina e controlla la console. Dovresti vedere:
+
+```
+WP Login Firewall: Pre-login container exists: 1
+```
+
+E il form dovrebbe funzionare correttamente preservando i parametri `redirect_to` e `reauth`!
+
+---
+

@@ -29,6 +29,7 @@ class WPLoginFirewall {
     
     public function enqueue_scripts() {
         wp_enqueue_style('wplf-styles', plugin_dir_url(__DIR__) . 'assets/css/pre-login-form.css');
+        // Carica lo script nel footer per assicurarsi che il form sia già presente
         wp_enqueue_script('wplf-ajax', plugin_dir_url(__DIR__) . 'assets/js/ajax-handler.js', array('jquery'), '1.0', true);
         wp_localize_script('wplf-ajax', 'wplf_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
