@@ -1,103 +1,150 @@
+/**
+ * WP Login Firewall - Progressive Form Handler
+ * Version: 2.0
+ */
+
 (function($) {
     'use strict';
     
-    // Funzione per inizializzare il form
-    function initializeForm() {
-        var preLoginForm = $('#pre-login-form');
+    $(document).ready(function() {
+        var $form = $('#loginform');
+        var $verificationStep = $('#wplf-verification-step');
+        var $usernameInput = $('#wplf-username-input');
+        var $wpUsername = $('#user_login');
+        var $wpPassword = $('#user_pass');
+        var $tokenField = $('#wplf-token');
+        var $verifyBtn = $('#wplf-verify-btn');
+        var $errorDiv = $('#wplf-error');
+        var $loadingDiv = $('#wplf-loading');
         
-        if (preLoginForm.length === 0) {
-            return false;
-        }
-        
-        console.log('WP Login Firewall: Form found, attaching event listener');
-        
-        // Funzione per ottenere parametri GET dall'URL corrente
-        function getUrlParameter(name) {
-            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-            var results = regex.exec(location.search);
-            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-        }
-        
-        // Debug: mostra l'URL corrente e i parametri
-        console.log('WP Login Firewall: Current URL:', window.location.href);
-        console.log('WP Login Firewall: redirect_to param:', getUrlParameter('redirect_to'));
-        console.log('WP Login Firewall: reauth param:', getUrlParameter('reauth'));
-        
-        preLoginForm.on('submit', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        /**
+         * Click sul pulsante "Verifica Username"
+         */
+        $verifyBtn.on('click', function() {
+            var username = $usernameInput.val().trim();
             
-            console.log('WP Login Firewall: Form submitted');
-            
-            var username = $('#wplf_username').val().trim();
-            var errorDiv = $('#error-message');
-            var successDiv = $('#success-message');
-            var loadingDiv = $('#loading');
-            var submitBtn = $(this).find('button[type="submit"]');
-            
-            // Validazione
             if (!username) {
-                errorDiv.text('Inserisci un nome utente o email valido.').show();
-                return false;
+                showError('Inserisci un nome utente o email.');
+                return;
             }
             
-            // Reset messaggi
-            errorDiv.hide();
-            successDiv.hide();
-            loadingDiv.show();
-            submitBtn.prop('disabled', true);
-            
-            console.log('WP Login Firewall: Sending AJAX request');
-            
-            // Raccogli i parametri GET attuali per passarli al server
-            var currentParams = {
-                redirect_to: getUrlParameter('redirect_to'),
-                reauth: getUrlParameter('reauth')
-            };
+            verifyUsername(username);
+        });
+        
+        /**
+         * Enter nel campo username
+         */
+        $usernameInput.on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $verifyBtn.click();
+            }
+        });
+        
+        /**
+         * Verifica username via AJAX
+         */
+        function verifyUsername(username) {
+            $verifyBtn.prop('disabled', true);
+            $errorDiv.hide();
+            $loadingDiv.show();
             
             $.ajax({
                 type: 'POST',
                 url: wplf_ajax.ajax_url,
                 data: {
                     action: 'wplf_verify_user',
-                    wplf_username: username,
-                    nonce: wplf_ajax.nonce,
-                    current_params: currentParams
+                    username: username,
+                    nonce: wplf_ajax.nonce
                 },
                 success: function(response) {
-                    console.log('WP Login Firewall: Response received', response);
-                    loadingDiv.hide();
-                    submitBtn.prop('disabled', false);
+                    $loadingDiv.hide();
                     
                     if (response.success) {
-                        successDiv.text('Utente verificato! Reindirizzamento al login...').show();
-                        setTimeout(function() {
-                            window.location.href = response.data.redirect_url;
-                        }, 1000);
+                        // Username verificato!
+                        onUsernameVerified(response.data);
                     } else {
-                        errorDiv.text(response.data).show();
-                        if (response.data && response.data.includes('tentativi')) {
-                            submitBtn.prop('disabled', true);
-                        }
+                        // Errore
+                        showError(response.data);
+                        $verifyBtn.prop('disabled', false);
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('WP Login Firewall: AJAX error', status, error);
-                    loadingDiv.hide();
-                    submitBtn.prop('disabled', false);
-                    errorDiv.text('Errore di connessione. Riprova.').show();
+                error: function() {
+                    $loadingDiv.hide();
+                    showError('Errore di connessione. Riprova.');
+                    $verifyBtn.prop('disabled', false);
                 }
             });
+        }
+        
+        /**
+         * Callback quando username è verificato
+         */
+        function onUsernameVerified(data) {
+            // Salva il token nel campo hidden
+            $tokenField.val(data.token);
             
-            return false;
+            // Popola il campo WordPress username
+            $wpUsername.val(data.username);
+            
+            // Nascondi step di verifica con animazione
+            $verificationStep.fadeOut(300, function() {
+                // Mostra i campi WordPress
+                $form.addClass('wplf-verified');
+                
+                // Rendi readonly il campo username
+                $wpUsername.prop('readonly', true);
+                
+                // Focus sul campo password
+                setTimeout(function() {
+                    $wpPassword.focus();
+                }, 100);
+            });
+            
+            // Cambia il testo del submit button
+            $form.find('.button-primary').val('Accedi');
+        }
+        
+        /**
+         * Mostra messaggio di errore
+         */
+        function showError(message) {
+            $errorDiv.text(message).fadeIn();
+            
+            // Nascondi dopo 5 secondi
+            setTimeout(function() {
+                $errorDiv.fadeOut();
+            }, 5000);
+        }
+        
+        /**
+         * Permetti di modificare username cliccando su di esso
+         */
+        $wpUsername.on('click', function() {
+            if ($(this).prop('readonly')) {
+                var change = confirm('Vuoi cambiare utente? Dovrai verificare nuovamente.');
+                if (change) {
+                    resetForm();
+                }
+            }
         });
         
-        return true; // Form inizializzato con successo
-    }
-    
-    // Inizializza quando il DOM è pronto
-    $(document).ready(function() {
-        initializeForm();
+        /**
+         * Reset del form per cambiare utente
+         */
+        function resetForm() {
+            $form.removeClass('wplf-verified');
+            $wpUsername.prop('readonly', false).val('');
+            $wpPassword.val('');
+            $tokenField.val('');
+            $usernameInput.val('');
+            $verifyBtn.prop('disabled', false);
+            $verificationStep.fadeIn();
+            
+            setTimeout(function() {
+                $usernameInput.focus();
+            }, 100);
+        }
     });
+    
 })(jQuery);
