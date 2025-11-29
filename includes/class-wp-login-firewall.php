@@ -127,7 +127,20 @@ class WPLoginFirewall {
             
             // Passiamo l'username originale per il pre-compilamento
             $login_to_pass = is_email($username) ? $user->user_login : $username;
-            $redirect_url = add_query_arg('verified', '1', wp_login_url());
+            
+            // Costruisci l'URL mantenendo tutti i parametri originali
+            $redirect_url = wp_login_url();
+            
+            // Mantieni i parametri esistenti come redirect_to e reauth
+            if (isset($_GET['redirect_to'])) {
+                $redirect_url = add_query_arg('redirect_to', urlencode($_GET['redirect_to']), $redirect_url);
+            }
+            if (isset($_GET['reauth'])) {
+                $redirect_url = add_query_arg('reauth', sanitize_text_field($_GET['reauth']), $redirect_url);
+            }
+            
+            // Aggiungi i nostri parametri
+            $redirect_url = add_query_arg('verified', '1', $redirect_url);
             $redirect_url = add_query_arg('user', rawurlencode($login_to_pass), $redirect_url);
             $redirect_url = add_query_arg('wplf_token', $token, $redirect_url);
             

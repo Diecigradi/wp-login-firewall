@@ -1170,7 +1170,7 @@ Prova ad accedere al pannello da WordPress Admin → Login Firewall!
 
 ---
 
-_**User (2025-11-29 19:26Z)**_
+_**User (2025-11-29 19:28Z)**_
 
 Ok però vorrei avere questa nuova funzionalità inserita in un file separato nella cartella includes con nome class-wp-login-firewall-admin.php
 
@@ -1178,7 +1178,147 @@ Ok però vorrei avere questa nuova funzionalità inserita in un file separato ne
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
-Perfetto! Creo un file separato per la gestione del pannello amministratore e rifattorizzo il codice per una migliore organizzazione. 
+Perfetto! Creo un file separato per la gestione del pannello amministratore e rifattorizzo il codice per una migliore organizzazione. Ora rimuovo le funzioni amministrative dalla classe principale e mantengo solo la logica di sicurezza: 
+```
+
+```
+
+```
+
+```
+Ora aggiorno il file principale per includere la nuova classe admin: 
+```
+
+```
+Perfetto! Ho completato la riorganizzazione del codice. Ora la struttura è:
+
+**📁 Struttura File Aggiornata:**
+- `wp-login-firewall.php` - File principale che inizializza le classi
+- `class-wp-login-firewall.php` - Logica di sicurezza e verifica login
+- `class-wp-login-firewall-admin.php` - Pannello amministrazione completo
+- `pre-login-form.css` - Stili per il form di verifica
+- `admin-style.css` - Stili per il pannello admin
+- `ajax-handler.js` - JavaScript per il form
+
+**✅ Benefici della riorganizzazione:**
+- Codice più pulito e organizzato
+- Separazione delle responsabilità (SoC)
+- Più facile da mantenere
+- Più facile da estendere Fatto! Il codice è stato riorganizzato con successo. Ora hai:
+
+✅ **Classe principale** (`class-wp-login-firewall.php`) - Gestisce solo la sicurezza e la verifica login
+✅ **Classe admin** (`class-wp-login-firewall-admin.php`) - Gestisce tutto il pannello amministrazione
+✅ **Codice pulito e organizzato** - Più facile da mantenere e estendere
+
+Il plugin funzionerà esattamente come prima, ma ora è molto più professionale e manutenibile!
+
+---
+
+_**User (2025-11-29 22:12Z)**_
+
+Come vengono rilevati i tentativi di bypass e come si può provare a fare un bypass?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ottima domanda! Ti spiego in dettaglio come funziona il sistema di rilevamento e come testarlo.
+
+## 🔍 Come Vengono Rilevati i Tentativi di Bypass
+
+Il sistema rileva i bypass attraverso **3 meccanismi server-side**:
+
+### 1. **Hook `authenticate` (Principale)**
+```php
+add_filter('authenticate', array($this, 'verify_token_before_auth'), 1, 3);
+```
+
+Questo hook viene eseguito PRIMA di qualsiasi tentativo di autenticazione in WordPress. Controlla:
+- ✅ Se esiste un token nell'URL (`?wplf_token=...`)
+- ✅ Se il token è valido e non scaduto (5 minuti)
+- ✅ Se il token corrisponde all'username fornito
+
+**Quando scatta**: Ogni volta che qualcuno invia username + password al form di login
+
+### 2. **Hook `wp_login_failed`**
+```php
+add_action('wp_login_failed', array($this, 'log_failed_bypass_attempt'));
+```
+
+Registra anche i login falliti senza token, utile per tracciare tentativi multipli.
+
+### 3. **Token Temporanei**
+Ogni verifica genera un token univoco che:
+- È valido per **5 minuti**
+- Può essere usato **una sola volta**
+- È legato a uno specifico username
+
+## 🧪 Come Testare il Sistema (Simulare un Bypass)
+
+Ecco **4 modi** per testare il sistema e verificare che funzioni:
+
+### **Test 1: Accesso Diretto al Form Standard**
+```
+1. Vai su: https://tuosito.it/wp-login.php
+2. Apri la console del browser (F12)
+3. Esegui: document.querySelector('#loginform').style.display = 'block';
+4. Esegui: document.querySelector('#pre-login-container').style.display = 'none';
+5. Prova a fare login con username e password corretti
+```
+
+**Risultato atteso**: Login bloccato con errore "Devi prima verificare la tua identità"
+
+### **Test 2: URL Manipulation (Più Sofisticato)**
+```
+1. Vai su: https://tuosito.it/wp-login.php?verified=1&user=admin
+2. Il form di login standard sarà visibile (perché il parametro verified=1 c'è)
+3. Prova a fare login
+```
+
+**Risultato atteso**: Login bloccato perché manca il token valido
+
+### **Test 3: Token Scaduto**
+```
+1. Completa la verifica normalmente (inserisci username valido)
+2. Copia l'URL con il token
+3. Aspetta 6+ minuti (il token scade dopo 5 minuti)
+4. Usa l'URL copiato per provare a fare login
+```
+
+**Risultato atteso**: Errore "Token di verifica non valido o scaduto"
+
+### **Test 4: Riuso del Token**
+```
+1. Completa la verifica e fai login con successo
+2. Fai logout
+3. Riprova a usare lo stesso URL con token
+```
+
+**Risultato atteso**: Token già usato, login bloccato
+
+## 📊 Dove Vedere i Risultati
+
+Dopo ogni tentativo di bypass, vai su:
+**WordPress Admin → Login Firewall**
+
+Vedrai:
+- Data e ora del tentativo
+- IP dell'attaccante
+- Username tentato
+- Motivo del blocco (Token Mancante, Token Invalido, ecc.)
+- User Agent completo
+
+## 🔐 Perché È Sicuro
+
+1. **Controllo Server-Side**: La verifica avviene sul server, non può essere bypassata dal client
+2. **Token Usa-e-Getta**: Ogni token funziona una sola volta
+3. **Scadenza Rapida**: 5 minuti di validità
+4. **Logging Completo**: Ogni tentativo viene registrato
+5. **Alert Email**: L'admin viene notificato dopo 3+ tentativi in un minuto
+
+## 💡 Vuoi che Aggiunga una Funzione di Test?
+
+Posso creare un pulsante nel pannello admin che simula automaticamente vari tipi di bypass per testare il sistema. Vuoi che lo implementi?
 
 ---
 
