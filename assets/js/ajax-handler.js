@@ -3,11 +3,15 @@
     
     $(document).ready(function() {
         console.log('WP Login Firewall: Script loaded');
+        console.log('WP Login Firewall: Looking for form #pre-login-form');
+        console.log('WP Login Firewall: All forms found:', $('form').length);
+        console.log('WP Login Firewall: Pre-login container exists:', $('#pre-login-container').length);
         
         var preLoginForm = $('#pre-login-form');
         
         if (preLoginForm.length === 0) {
             console.log('WP Login Firewall: Form not found');
+            console.log('WP Login Firewall: All IDs in page:', $('[id]').map(function() { return this.id; }).get());
             return;
         }
         

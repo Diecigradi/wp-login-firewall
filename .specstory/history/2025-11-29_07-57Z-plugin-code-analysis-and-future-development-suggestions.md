@@ -1436,3 +1436,34 @@ E dopo il login verrai automaticamente reindirizzato al pannello admin! Fatto! O
 
 ---
 
+_**User (2025-11-29 22:30Z)**_
+
+Ecco l'url ora:
+/wp-login.php?verified=1&user=Diecigradi-77&wplf_token=cd84e46255b866e9805c84d28ea8d062
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Vedo che l'URL ancora non contiene i parametri `redirect_to` e `reauth`. Questo significa che il JavaScript non riesce a leggerli correttamente dall'URL.
+
+Fammi verificare quale URL hai quando arrivi alla pagina di verifica. Quando vai su `/wp-admin` e vieni reindirizzato al form di login, l'URL nella barra del browser dovrebbe essere:
+
+`/wp-login.php?redirect_to=https%3A%2F%2Fexplorerfvg.roomzerostaging.it%2Fwp-admin%2F&reauth=1`
+
+Il problema potrebbe essere che il browser ha già rimosso questi parametri dall'URL prima che il JavaScript li legga. Verifichiamo aggiungendo dei log nella console: 
+```
+
+```
+Ora ricarica la pagina del form di login (partendo da `/wp-admin` per avere i parametri nell'URL) e apri la console del browser. Dovresti vedere questi messaggi:
+
+```
+WP Login Firewall: Current URL: ...
+WP Login Firewall: redirect_to param: ...
+WP Login Firewall: reauth param: ...
+```
+
+Mandami quello che vedi nella console, così capisco se i parametri ci sono nell'URL quando carichi la pagina!
+
+---
+
