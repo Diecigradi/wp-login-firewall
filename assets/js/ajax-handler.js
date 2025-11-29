@@ -2,7 +2,7 @@ jQuery(document).ready(function($) {
     $('#pre-login-form').on('submit', function(e) {
         e.preventDefault();
         
-        var username = $('#cls_username').val();
+        var username = $('#wplf_username').val();
         var errorDiv = $('#error-message');
         var successDiv = $('#success-message');
         var loadingDiv = $('#loading');
@@ -14,11 +14,11 @@ jQuery(document).ready(function($) {
         
         $.ajax({
             type: 'POST',
-            url: cls_ajax.ajax_url,
+            url: wplf_ajax.ajax_url,
             data: {
-                action: 'cls_verify_user',
+                action: 'wplf_verify_user',
                 username: username,
-                nonce: cls_ajax.nonce
+                nonce: wplf_ajax.nonce
             },
             success: function(response) {
                 loadingDiv.hide();

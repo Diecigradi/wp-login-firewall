@@ -1,4 +1,4 @@
-# Custom Login Security
+# WP Login Firewall
 
 ![Version](https://img.shields.io/badge/version-1.0-blue.svg)
 ![WordPress](https://img.shields.io/badge/wordpress-5.0%2B-blue.svg)
@@ -35,7 +35,7 @@ Un plugin WordPress che aggiunge un layer di sicurezza aggiuntivo al processo di
 ### Metodo 2: FTP
 
 1. Scarica e decomprimi il plugin
-2. Carica la cartella `wp-secure-login` nella directory `/wp-content/plugins/`
+1. Carica la cartella `wp-login-firewall` nella directory `/wp-content/plugins/`
 3. Attiva il plugin tramite il menu "Plugin" in WordPress
 
 ## 📖 Come Funziona
@@ -50,15 +50,15 @@ Un plugin WordPress che aggiunge un layer di sicurezza aggiuntivo al processo di
 ## 🎨 Struttura File
 
 ```
-wp-secure-login/
+wp-login-firewall/
 ├── assets/
 │   ├── css/
 │   │   └── pre-login-form.css   # Stili del form
 │   └── js/
 │       └── ajax-handler.js      # Gestione AJAX
 ├── includes/
-│   └── class-custom-login-security.php # Classe principale
-├── custom-login-security.php    # File principale del plugin
+│   └── class-wp-login-firewall.php # Classe principale
+├── wp-login-firewall.php        # File principale del plugin
 ├── README.md                     # Questo file
 └── LICENSE                       # Licenza GPL-2.0
 ```

@@ -2,7 +2,7 @@
 // Previene l'accesso diretto
 defined('ABSPATH') or die('Accesso negato!');
 
-class CustomLoginSecurity {
+class WPLoginFirewall {
 
     private const MAX_ATTEMPTS = 5;
     private const LOCKOUT_TIME = 15 * MINUTE_IN_SECONDS;
@@ -21,7 +21,7 @@ class CustomLoginSecurity {
         } else {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
-        return apply_filters('cls_get_user_ip', $ip);
+        return apply_filters('wplf_get_user_ip', $ip);
     }
     
     public function init() {
@@ -31,11 +31,11 @@ class CustomLoginSecurity {
     
     public function enqueue_scripts() {
         wp_enqueue_script('jquery');
-        wp_enqueue_style('cls-styles', plugin_dir_url(__DIR__) . 'assets/css/pre-login-form.css');
-        wp_enqueue_script('cls-ajax', plugin_dir_url(__DIR__) . 'assets/js/ajax-handler.js', array('jquery'), '1.0', true);
-        wp_localize_script('cls-ajax', 'cls_ajax', array(
+        wp_enqueue_style('wplf-styles', plugin_dir_url(__DIR__) . 'assets/css/pre-login-form.css');
+        wp_enqueue_script('wplf-ajax', plugin_dir_url(__DIR__) . 'assets/js/ajax-handler.js', array('jquery'), '1.0', true);
+        wp_localize_script('wplf-ajax', 'wplf_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('cls_nonce')
+            'nonce' => wp_create_nonce('wplf_nonce')
         ));
     }
     
@@ -47,13 +47,13 @@ class CustomLoginSecurity {
         }
         
         // Se non è la richiesta di verifica, mostra il form pre-login
-        if (!isset($_POST['cls_username']) && !isset($_GET['verified'])) {
+        if (!isset($_POST['wplf_username']) && !isset($_GET['verified'])) {
             $this->show_pre_login_form();
             exit;
         }
         
         // Gestisce la verifica dell'utente
-        if (isset($_POST['cls_username'])) {
+        if (isset($_POST['wplf_username'])) {
             $this->verify_user();
         }
     }
@@ -78,8 +78,8 @@ class CustomLoginSecurity {
                     
                     <form id="pre-login-form">
                         <div class="form-group">
-                            <label for="cls_username">Nome utente o Email</label>
-                            <input type="text" id="cls_username" name="cls_username" required autocomplete="username">
+                            <label for="wplf_username">Nome utente o Email</label>
+                            <input type="text" id="wplf_username" name="wplf_username" required autocomplete="username">
                         </div>
                         <button type="submit" class="submit-button">Verifica Accesso</button>
                     </form>
@@ -93,12 +93,12 @@ class CustomLoginSecurity {
     }
     
     public function verify_user() {
-        if (!wp_verify_nonce($_POST['nonce'], 'cls_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'wplf_nonce')) {
             wp_die('Security check failed');
         }
 
         $ip = $this->get_user_ip();
-        $transient_name = 'cls_login_attempts_' . $ip;
+        $transient_name = 'wplf_login_attempts_' . $ip;
         $attempts = get_transient($transient_name);
 
         if ($attempts !== false && $attempts >= self::MAX_ATTEMPTS) {
