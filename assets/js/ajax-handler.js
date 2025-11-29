@@ -1,6 +1,52 @@
 (function($) {
     'use strict';
     
+    // Funzione per creare e inserire il form se non esiste
+    function createFormIfNeeded() {
+        if ($('#pre-login-container').length > 0) {
+            console.log('WP Login Firewall: Form already exists in DOM');
+            return true;
+        }
+        
+        console.log('WP Login Firewall: Form not found, creating it dynamically');
+        
+        // Crea il form HTML
+        var formHtml = '<div id="pre-login-container">' +
+            '<div class="pre-login-form">' +
+            '<h2>Verifica Accesso</h2>' +
+            '<div class="error-message" id="error-message"></div>' +
+            '<div class="success-message" id="success-message"></div>' +
+            '<div class="loading" id="loading">Verifica in corso...</div>' +
+            '<form id="pre-login-form" method="post">' +
+            '<div class="form-group">' +
+            '<label for="wplf_username">Nome utente o Email</label>' +
+            '<input type="text" id="wplf_username" name="wplf_username" required autocomplete="username">' +
+            '</div>' +
+            '<button type="submit" class="submit-button">Verifica Accesso</button>' +
+            '</form>' +
+            '</div>' +
+            '</div>';
+        
+        // Inserisci il form prima del loginform
+        var loginForm = $('#loginform');
+        if (loginForm.length > 0) {
+            loginForm.before(formHtml);
+            console.log('WP Login Firewall: Form inserted before #loginform');
+            return true;
+        }
+        
+        // Se loginform non esiste, inserisci dopo il login div
+        var loginDiv = $('#login');
+        if (loginDiv.length > 0) {
+            loginDiv.prepend(formHtml);
+            console.log('WP Login Firewall: Form inserted inside #login');
+            return true;
+        }
+        
+        console.error('WP Login Firewall: Could not find insertion point for form');
+        return false;
+    }
+    
     // Funzione per inizializzare il form
     function initializeForm() {
         console.log('WP Login Firewall: Script loaded');
@@ -8,11 +54,15 @@
         console.log('WP Login Firewall: All forms found:', $('form').length);
         console.log('WP Login Firewall: Pre-login container exists:', $('#pre-login-container').length);
         
+        // Crea il form se non esiste
+        if (!createFormIfNeeded()) {
+            return false;
+        }
+        
         var preLoginForm = $('#pre-login-form');
         
         if (preLoginForm.length === 0) {
-            console.log('WP Login Firewall: Form not found, will retry in 100ms');
-            console.log('WP Login Firewall: All IDs in page:', $('[id]').map(function() { return this.id; }).get());
+            console.log('WP Login Firewall: Form not found after creation attempt');
             return false;
         }
         
@@ -103,10 +153,10 @@
         return true; // Form inizializzato con successo
     }
     
-    // Prova a inizializzare il form, riprova fino a 10 volte se non trovato
+    // Prova a inizializzare il form immediatamente
     $(document).ready(function() {
         var attempts = 0;
-        var maxAttempts = 10;
+        var maxAttempts = 3; // Ridotto perché ora creiamo il form dinamicamente
         
         function tryInit() {
             if (initializeForm()) {
@@ -118,7 +168,7 @@
             if (attempts < maxAttempts) {
                 setTimeout(tryInit, 100);
             } else {
-                console.error('WP Login Firewall: Failed to find form after', maxAttempts, 'attempts');
+                console.error('WP Login Firewall: Failed to initialize after', maxAttempts, 'attempts');
             }
         }
         

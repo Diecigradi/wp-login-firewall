@@ -46,7 +46,8 @@ class WPLoginFirewall {
         // Se l'utente è già verificato, popola il campo username e nascondi il pre-login form
         if (isset($_GET['verified']) && $_GET['verified'] === '1' && isset($_GET['user'])) {
             add_action('login_head', function() {
-                echo '<style>#pre-login-container { display: none; }</style>';
+                // Nascondi il nostro form e MOSTRA il form standard di WordPress
+                echo '<style>#pre-login-container { display: none !important; } #loginform { display: block !important; } .login #nav, .login #backtoblog { display: block !important; }</style>';
             });
             add_filter('login_username', function($username) {
                 return esc_attr(rawurldecode($_GET['user']));
@@ -56,43 +57,7 @@ class WPLoginFirewall {
             add_action('login_head', function() {
                 echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
             });
-            // Inserisci il form direttamente usando login_form action (viene sempre eseguita)
-            add_action('login_form', array($this, 'inject_pre_login_form'), 1);
         }
-    }
-    
-    /**
-     * Inietta il nostro form prima del form di login standard
-     */
-    public function inject_pre_login_form() {
-        if (self::$form_rendered) {
-            return;
-        }
-        self::$form_rendered = true;
-        
-        // Chiudi il form di WordPress e inserisci il nostro
-        echo '</form>'; // Chiude temporaneamente il loginform di WP
-        ?>
-        <div id="pre-login-container">
-            <div class="pre-login-form">
-                <h2>Verifica Accesso</h2>
-                
-                <div class="error-message" id="error-message"></div>
-                <div class="success-message" id="success-message"></div>
-                <div class="loading" id="loading">Verifica in corso...</div>
-                
-                <form id="pre-login-form" method="post">
-                    <div class="form-group">
-                        <label for="wplf_username">Nome utente o Email</label>
-                        <input type="text" id="wplf_username" name="wplf_username" required autocomplete="username">
-                    </div>
-                    <button type="submit" class="submit-button">Verifica Accesso</button>
-                </form>
-            </div>
-        </div>
-        <form id="loginform-hidden" style="display: none;">
-        <?php
-        // Il form di WordPress riprenderà qui
     }
     
     public function verify_user() {

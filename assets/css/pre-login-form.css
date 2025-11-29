@@ -120,6 +120,13 @@ body.login h1 {
     display: none;
 }
 
+/* Nascondi il form di WordPress quando è presente il nostro form */
+body.login:has(#pre-login-container) #loginform,
+body.login:has(#pre-login-container) .login #nav,
+body.login:has(#pre-login-container) .login #backtoblog {
+    display: none !important;
+}
+
 /* Container principale */
 #pre-login-container {
     background: var(--wplf-card-bg);
