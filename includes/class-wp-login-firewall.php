@@ -56,21 +56,22 @@ class WPLoginFirewall {
             add_action('login_head', function() {
                 echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
             });
-            // Usa login_message per inserire il form PRIMA, così è già nel DOM quando lo script viene caricato
-            add_filter('login_message', array($this, 'show_pre_login_form'));
+            // Inserisci il form direttamente usando login_form action (viene sempre eseguita)
+            add_action('login_form', array($this, 'inject_pre_login_form'), 1);
         }
     }
     
     /**
-     * Mostra il form usando il filtro login_message
+     * Inietta il nostro form prima del form di login standard
      */
-    public function show_pre_login_form($message) {
+    public function inject_pre_login_form() {
         if (self::$form_rendered) {
-            return $message;
+            return;
         }
         self::$form_rendered = true;
         
-        ob_start();
+        // Chiudi il form di WordPress e inserisci il nostro
+        echo '</form>'; // Chiude temporaneamente il loginform di WP
         ?>
         <div id="pre-login-container">
             <div class="pre-login-form">
@@ -89,8 +90,9 @@ class WPLoginFirewall {
                 </form>
             </div>
         </div>
+        <form id="loginform-hidden" style="display: none;">
         <?php
-        return $message . ob_get_clean();
+        // Il form di WordPress riprenderà qui
     }
     
     public function verify_user() {
