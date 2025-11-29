@@ -1558,3 +1558,151 @@ E il form dovrebbe funzionare correttamente preservando i parametri `redirect_to
 
 ---
 
+_**User (2025-11-29 22:37Z)**_
+
+Contenuto console
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+ajax-handler.js?ver=1.0:5 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:7 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:8 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:13 WP Login Firewall: Form not found
+ajax-handler.js?ver=1.0:14 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Il container ancora non c'è! Il problema è che il nostro script JavaScript viene eseguito PRIMA che `login_footer` venga chiamato. Il nostro script è caricato nell'`<head>` ma il form viene inserito nel footer, quindi quando jQuery `ready` viene eseguito, il form non esiste ancora.
+
+La soluzione è spostare il caricamento dello script nel footer O usare un evento che attende che il form sia effettivamente presente. Modifico per caricare lo script nel footer: 
+```
+
+```
+Aspetta, ho visto che lo script è già impostato con `true` (ultimo parametro), quindi dovrebbe già essere caricato nel footer. Il problema allora è che `login_footer` non viene eseguito prima che il nostro script parta.
+
+Verifichiamo se il form viene effettivamente inserito nel DOM. Aggiungo un approccio più robusto usando un MutationObserver o semplicemente ritardando l'inizializzazione: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Ora lo script proverà a trovare il form fino a 10 volte con un intervallo di 100ms. Questo darà tempo al `login_footer` di essere eseguito e inserire il form nel DOM. Fatto! Ora ricarica la pagina. Lo script proverà a trovare il form ogni 100ms per un massimo di 10 tentativi (1 secondo). Dovresti vedere nei log quando trova il form con successo. Fammi sapere cosa dice la console!
+
+---
+
+_**User (2025-11-29 22:38Z)**_
+
+Contenuto console:
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:6 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:7 WP Login Firewall: Looking for form #pre-login-form
+ajax-handler.js?ver=1.0:8 WP Login Firewall: All forms found: 2
+ajax-handler.js?ver=1.0:9 WP Login Firewall: Pre-login container exists: 0
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form not found, will retry in 100ms
+ajax-handler.js?ver=1.0:15 WP Login Firewall: All IDs in page: (42) ['jquery-core-js', 'jquery-migrate-js', 'dashicons-css', 'dokan-shipping-block-checkout-support-css', 'buttons-css', 'forms-css', 'l10n-css', 'login-css', 'wplf-styles-css', 'login', 'loginform', 'user_login', 'user_pass', 'rememberme', 'wp-submit', 'nav', 'backtoblog', 'language-switcher', 'language-switcher-locales', 'wplf-ajax-js-extra', 'wplf-ajax-js', 'clipboard-js', 'zxcvbn-async-js-extra', 'zxcvbn-async-js', 'wp-hooks-js', 'wp-i18n-js', 'wp-i18n-js-after', 'password-strength-meter-js-extra', 'password-strength-meter-js-translations', 'password-strength-meter-js', 'underscore-js', 'wp-util-js-extra', 'wp-util-js', 'wp-dom-ready-js', 'wp-a11y-js-translations', 'wp-a11y-js', 'user-profile-js-extra', 'user-profile-js-translations', 'user-profile-js', 'a11y-speak-intro-text', 'a11y-speak-assertive', 'a11y-speak-polite']
+ajax-handler.js?ver=1.0:121 WP Login Firewall: Failed to find form after 10 attempts
+tryInit @ ajax-handler.js?ver=1.0:121
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+setTimeout
+tryInit @ ajax-handler.js?ver=1.0:119
+(anonymous) @ ajax-handler.js?ver=1.0:125
+e @ jquery.min.js?ver=3.7.1:2
+(anonymous) @ jquery.min.js?ver=3.7.1:2
+setTimeout
+(anonymous) @ jquery.min.js?ver=3.7.1:2
+c @ jquery.min.js?ver=3.7.1:2
+fireWith @ jquery.min.js?ver=3.7.1:2
+fire @ jquery.min.js?ver=3.7.1:2
+c @ jquery.min.js?ver=3.7.1:2
+fireWith @ jquery.min.js?ver=3.7.1:2
+ready @ jquery.min.js?ver=3.7.1:2
+P @ jquery.min.js?ver=3.7.1:2
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+
+---
+
