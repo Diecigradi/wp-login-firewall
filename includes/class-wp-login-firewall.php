@@ -57,16 +57,33 @@ class WPLoginFirewall {
                 ?>
                 <script type="text/javascript">
                 jQuery(document).ready(function($) {
-                    // Precompila il campo username
-                    $('#user_login').val('<?php echo $username; ?>');
+                    var $userLogin = $('#user_login');
                     
-                    // Rimuovi readonly quando si prova a modificare
-                    $('#user_login').on('focus click', function() {
-                        $(this).prop('readonly', false);
+                    // Debug: verifica lo stato del campo
+                    console.log('Username field exists:', $userLogin.length);
+                    console.log('Readonly:', $userLogin.prop('readonly'));
+                    console.log('Disabled:', $userLogin.prop('disabled'));
+                    console.log('Attributes:', $userLogin[0] ? $userLogin[0].attributes : 'none');
+                    
+                    // Precompila il campo username
+                    $userLogin.val('<?php echo $username; ?>');
+                    
+                    // Rimuovi tutti gli attributi che potrebbero bloccare l'input
+                    $userLogin.prop('readonly', false)
+                             .prop('disabled', false)
+                             .removeAttr('readonly')
+                             .removeAttr('disabled')
+                             .removeAttr('autocomplete');
+                    
+                    // Test se possiamo scrivere
+                    $userLogin.on('keydown keypress keyup', function(e) {
+                        console.log('Key event:', e.type, e.key);
                     });
                     
                     // Focus automatico sul campo password
-                    $('#user_pass').focus();
+                    setTimeout(function() {
+                        $('#user_pass').focus();
+                    }, 100);
                 });
                 </script>
                 <?php
