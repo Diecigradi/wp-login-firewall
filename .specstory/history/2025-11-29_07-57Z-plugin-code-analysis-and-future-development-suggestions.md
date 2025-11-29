@@ -793,7 +793,7 @@ Fammi sapere cosa vedi nella console, così possiamo identificare esattamente do
 
 ---
 
-_**User (2025-11-29 15:25Z)**_
+_**User (2025-11-29 15:26Z)**_
 
 Ecco il contenuto della console del browser
 
@@ -819,6 +819,43 @@ Il problema è che il nostro form viene reso sia attraverso l'hook `login_form` 
 La soluzione è modificare la strategia: invece di usare `login_form`, dobbiamo usare un hook che viene chiamato PRIMA del form di login, come `login_header` o gestire tutto tramite CSS per nascondere il form standard e mostrare il nostro.
 
 Correggo subito il problema: 
+```
+
+```
+Ho corretto il problema della duplicazione del form. Le modifiche applicate:
+
+1. **Rimosso l'hook `login_form`** che causava la duplicazione inserendo il nostro form dentro quello di WordPress
+2. **Aggiunto l'hook `login_message`** che inserisce il nostro form PRIMA del form di WordPress, evitando nidificazioni
+3. **Modificata la funzione `show_pre_login_form`** per usare l'output buffering e restituire il contenuto invece di echeggiarlo direttamente
+
+Ora ci sarà un solo form nella pagina e l'evento submit verrà catturato una sola volta. Fatto. Ora ricarica la pagina e prova di nuovo. La console del browser non dovrebbe più mostrare l'errore di ID duplicato e il form dovrebbe funzionare correttamente. Fammi sapere se ora funziona!
+
+---
+
+_**User (2025-11-29 15:31Z)**_
+
+Ok ora il nostro form sembra funzionare ma ci sono due form nella pagina, vedi screen allegato. Riporto anche la console del browser:
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+wp-login.php?redirect_to=https%3A%2F%2Fexplorerfvg.roomzerostaging.it%2Fwp-admin%2F&reauth=1:1 [DOM] Found 2 elements with non-unique id #pre-login-form: (More info: https://goo.gl/9p2vKq) <form id=​"pre-login-form" method=​"post">​…​</form>​ <form id=​"pre-login-form" method=​"post">​…​</form>​
+wp-login.php?redirect_to=https%3A%2F%2Fexplorerfvg.roomzerostaging.it%2Fwp-admin%2F&reauth=1:1 [DOM] Found 2 elements with non-unique id #wplf_username: (More info: https://goo.gl/9p2vKq) <input type=​"text" id=​"wplf_username" name=​"wplf_username" required autocomplete=​"username">​ <input type=​"text" id=​"wplf_username" name=​"wplf_username" required autocomplete=​"username">​
+ajax-handler.js?ver=1.0:5 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:14 WP Login Firewall: Form found, attaching event listener
+ajax-handler.js?ver=1.0:20 WP Login Firewall: Form submitted
+ajax-handler.js?ver=1.0:40 WP Login Firewall: Sending AJAX request
+ajax-handler.js?ver=1.0:51 WP Login Firewall: Response received Object
+
+Inoltre solo per il momento e per fare i test disabiliterei la funzione che limita i tentatici di login
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ottimo! Ora il plugin funziona (come vedo dai log "Response received"), ma abbiamo ancora il problema della duplicazione. Guardando lo screenshot e l'URL (`reauth=1`), capisco cosa sta succedendo: il parametro `reauth` fa sì che WordPress richiami più volte l'hook `login_message`, causando la doppia visualizzazione del form.
+
+Risolvo entrambi i problemi:
+1. Aggiungo un flag per evitare che il form venga renderizzato più volte
+2. Commento temporaneamente la logica di rate limiting 
 
 ---
 
