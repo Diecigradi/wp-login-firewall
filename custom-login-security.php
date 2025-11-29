@@ -1,9 +1,12 @@
 <?php
 /**
- * Plugin Name: Custom Login Security
+ * Plugin Name: WP Secure Login System
  * Description: Aggiunge un layer di sicurezza prima del login
  * Version: 1.0
- * Author: Il tuo nome
+ * Author: DevRoom by RoomZero Creative Solutions
+ * License: GPL2
+ * Text Domain: wp-secure-login
+ * url: https://www.roomzero.it
  */
 
 // Previene l'accesso diretto
@@ -24,6 +27,7 @@ class CustomLoginSecurity {
     
     public function enqueue_scripts() {
         wp_enqueue_script('jquery');
+        wp_enqueue_style('cls-styles', plugin_dir_url(__FILE__) . 'css/pre-login-form.css');
         wp_enqueue_script('cls-ajax', plugin_dir_url(__FILE__) . 'js/ajax-handler.js', array('jquery'), '1.0', true);
         wp_localize_script('cls-ajax', 'cls_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -57,86 +61,7 @@ class CustomLoginSecurity {
         <head>
             <title>Verifica Accesso - <?php echo get_bloginfo('name'); ?></title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    background: #f0f0f1;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                }
-                .pre-login-container {
-                    background: #fff;
-                    padding: 40px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    width: 100%;
-                    max-width: 400px;
-                }
-                .pre-login-form h2 {
-                    text-align: center;
-                    color: #3c434a;
-                    margin-bottom: 30px;
-                }
-                .form-group {
-                    margin-bottom: 20px;
-                }
-                .form-group label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-weight: 600;
-                    color: #3c434a;
-                }
-                .form-group input {
-                    width: 100%;
-                    padding: 12px;
-                    border: 1px solid #dcdcde;
-                    border-radius: 4px;
-                    font-size: 16px;
-                    box-sizing: border-box;
-                }
-                .form-group input:focus {
-                    border-color: #2271b1;
-                    outline: none;
-                    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
-                }
-                .submit-button {
-                    width: 100%;
-                    padding: 12px;
-                    background: #2271b1;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 16px;
-                    cursor: pointer;
-                }
-                .submit-button:hover {
-                    background: #135e96;
-                }
-                .error-message {
-                    color: #d63638;
-                    background: #ffeaea;
-                    padding: 10px;
-                    border-radius: 4px;
-                    margin-bottom: 15px;
-                    display: none;
-                }
-                .loading {
-                    text-align: center;
-                    display: none;
-                }
-                .success-message {
-                    color: #00a32a;
-                    background: #f0f7f0;
-                    padding: 10px;
-                    border-radius: 4px;
-                    margin-bottom: 15px;
-                    display: none;
-                }
-            </style>
+            <?php wp_head(); ?>
         </head>
         <body>
             <div class="pre-login-container">
@@ -157,49 +82,7 @@ class CustomLoginSecurity {
                 </div>
             </div>
 
-            <script>
-            jQuery(document).ready(function($) {
-                $('#pre-login-form').on('submit', function(e) {
-                    e.preventDefault();
-                    
-                    var username = $('#cls_username').val();
-                    var errorDiv = $('#error-message');
-                    var successDiv = $('#success-message');
-                    var loadingDiv = $('#loading');
-                    
-                    // Reset messaggi
-                    errorDiv.hide();
-                    successDiv.hide();
-                    loadingDiv.show();
-                    
-                    $.ajax({
-                        type: 'POST',
-                        url: cls_ajax.ajax_url,
-                        data: {
-                            action: 'cls_verify_user',
-                            username: username,
-                            nonce: cls_ajax.nonce
-                        },
-                        success: function(response) {
-                            loadingDiv.hide();
-                            
-                            if (response.success) {
-                                successDiv.text('Utente verificato! Reindirizzamento al login...').show();
-                                setTimeout(function() {
-                                    window.location.href = '<?php echo wp_login_url(); ?>?verified=1&user=' + encodeURIComponent(username);
-                                }, 1000);
-                            } else {
-                                errorDiv.text(response.data).show();
-                            }
-                        },
-                        error: function() {
-                            loadingDiv.hide();
-                            errorDiv.text('Errore di connessione. Riprova.').show();
-                        }
-                    });
-                });
-            });
-            </script>
+            <?php wp_footer(); ?>
         </body>
         </html>
         <?php
@@ -220,7 +103,9 @@ class CustomLoginSecurity {
         }
         
         if ($user) {
-            wp_send_json_success();
+            $redirect_url = add_query_arg('verified', '1', wp_login_url());
+            $redirect_url = add_query_arg('user', rawurlencode($username), $redirect_url);
+            wp_send_json_success(array('redirect_url' => $redirect_url));
         } else {
             wp_send_json_error('Utente non trovato nel sistema.');
         }

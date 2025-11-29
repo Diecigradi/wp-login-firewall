@@ -1,25 +1,40 @@
 jQuery(document).ready(function($) {
-    // Gestione AJAX per la verifica utente
-    $(document).on('submit', '#pre-login-form', function(e) {
+    $('#pre-login-form').on('submit', function(e) {
         e.preventDefault();
         
-        var formData = $(this).serialize();
+        var username = $('#cls_username').val();
+        var errorDiv = $('#error-message');
+        var successDiv = $('#success-message');
+        var loadingDiv = $('#loading');
+        
+        // Reset messaggi
+        errorDiv.hide();
+        successDiv.hide();
+        loadingDiv.show();
         
         $.ajax({
             type: 'POST',
             url: cls_ajax.ajax_url,
             data: {
                 action: 'cls_verify_user',
-                data: formData,
+                username: username,
                 nonce: cls_ajax.nonce
             },
             success: function(response) {
+                loadingDiv.hide();
+                
                 if (response.success) {
-                    // Reindirizza al login WordPress
-                    window.location.href = response.data.redirect_url;
+                    successDiv.text('Utente verificato! Reindirizzamento al login...').show();
+                    setTimeout(function() {
+                        window.location.href = response.data.redirect_url;
+                    }, 1000);
                 } else {
-                    $('#error-message').text(response.data).show();
+                    errorDiv.text(response.data).show();
                 }
+            },
+            error: function() {
+                loadingDiv.hide();
+                errorDiv.text('Errore di connessione. Riprova.').show();
             }
         });
     });
