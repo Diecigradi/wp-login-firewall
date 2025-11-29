@@ -1389,3 +1389,50 @@ Se il problema è che dopo aver inserito username valido non succede nulla, potr
 
 ---
 
+_**User (2025-11-29 22:25Z)**_
+
+Ok capito. Ho provato ad inserire uno username valido e vengo reindirizzato.
+wp-login.php?verified=1&user=Diecigradi-77&wplf_token=567149db2e56657529e2ce3febc26ea1
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Il sistema funziona correttamente. Vedo che:
+
+✅ Username verificato con successo
+✅ Token generato: `567149db2e56657529e2ce3febc26ea1`
+✅ Reindirizzamento effettuato
+
+**Però noto un problema**: quando accedi da `/wp-admin` con l'URL `?redirect_to=...&reauth=1`, dopo la verifica questi parametri vengono persi. L'URL finale dovrebbe essere:
+
+```
+wp-login.php?verified=1&user=Diecigradi-77&wplf_token=567...&redirect_to=https%3A%2F%2F...%2Fwp-admin%2F&reauth=1
+```
+
+Il problema è che il JavaScript legge i parametri GET dalla pagina corrente usando `$_GET`, ma in JavaScript non abbiamo accesso a `$_GET`. Devo correggere il JavaScript per leggere i parametri dall'URL del browser. 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ho corretto il codice per:
+
+1. **JavaScript** - Ora legge i parametri GET dall'URL corrente del browser e li invia al server tramite AJAX
+2. **PHP** - Riceve questi parametri e li include nell'URL di redirect
+
+Ora quando accedi da `/wp-admin`, dopo la verifica vedrai un URL completo tipo:
+```
+wp-login.php?verified=1&user=Diecigradi-77&wplf_token=567...&redirect_to=https%3A%2F%2F...%2Fwp-admin%2F&reauth=1
+```
+
+E dopo il login verrai automaticamente reindirizzato al pannello admin! Fatto! Ora prova di nuovo ad accedere da `/wp-admin` e verifica che dopo il login completo vieni reindirizzato correttamente al dashboard.
+
+---
+

@@ -21,6 +21,11 @@
             return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }
         
+        // Debug: mostra l'URL corrente e i parametri
+        console.log('WP Login Firewall: Current URL:', window.location.href);
+        console.log('WP Login Firewall: redirect_to param:', getUrlParameter('redirect_to'));
+        console.log('WP Login Firewall: reauth param:', getUrlParameter('reauth'));
+        
         preLoginForm.on('submit', function(e) {
             e.preventDefault();
             e.stopPropagation();
