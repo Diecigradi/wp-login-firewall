@@ -1051,7 +1051,7 @@ Vuoi che implementi questa soluzione? Aggiungerò:
 
 ---
 
-_**User (2025-11-29 19:19Z)**_
+_**User (2025-11-29 19:22Z)**_
 
 Procedi con l'opzione 2 migliorata
 
@@ -1060,6 +1060,71 @@ Procedi con l'opzione 2 migliorata
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
 Perfetto! Implemento l'Opzione 2 migliorata con protezione server-side robusta, token temporanei e logging dei tentativi di bypass. 
+```
+
+```
+Perfetto! Ho implementato un sistema di sicurezza robusto con le seguenti funzionalità:
+
+## 🔒 Nuove Funzionalità di Sicurezza
+
+**1. Token Temporanei**
+- Ogni verifica genera un token univoco valido per 5 minuti
+- Il token viene passato nell'URL durante il reindirizzamento
+- Ogni token può essere usato una sola volta (viene eliminato dopo l'uso)
+
+**2. Controllo Server-Side**
+- Intercetta TUTTI i tentativi di login tramite l'hook `authenticate`
+- Verifica la presenza e validità del token PRIMA di permettere l'autenticazione
+- Se il token manca o è invalido, blocca il login e mostra un errore
+
+**3. Logging Completo**
+- Registra tutti i tentativi di bypass nel database
+- Traccia: IP, username, timestamp, user agent, motivo del blocco
+- Mantiene gli ultimi 100 tentativi per analisi
+
+**4. Sistema di Allerta**
+- Invia email all'amministratore dopo 3+ tentativi sospetti in un minuto
+- Include dettagli completi dell'attacco
+- Previene spam di email con sistema di throttling
+
+**5. Messaggi di Errore Chiari**
+- Gli utenti che provano a bypassare il sistema vedono messaggi esplicativi
+- Link per tornare al form di verifica
+
+## 🛡️ Protezione Contro
+
+- ✅ Bypass tramite console del browser
+- ✅ Accesso diretto al form di login
+- ✅ Tentativi di brute force
+- ✅ Riuso di URL con token scaduti
+- ✅ Attacchi automatizzati
+
+Ora eseguo commit e push. Fatto! Ora il plugin ha una protezione server-side robusta. 
+
+**Cosa succede ora se qualcuno prova a bypassare il sistema:**
+
+1. Anche se rende visibile il form standard tramite console, il login verrà bloccato
+2. Vedrà un messaggio di errore che lo invita a tornare al form di verifica
+3. Il tentativo verrà registrato nel log con tutti i dettagli
+4. Se ci sono tentativi ripetuti, l'amministratore riceverà un'email di allerta
+
+Il sistema è ora sicuro sia lato client che lato server! Vuoi testarlo o vuoi che implementi anche un pannello di amministrazione per visualizzare i log dei tentativi di bypass?
+
+---
+
+_**User (2025-11-29 19:23Z)**_
+
+Implementa anche un pannello di amministrazione per i log dei tentativi di bypass
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Implemento un pannello di amministrazione completo per visualizzare e gestire i log dei tentativi di bypass. 
+```
+
+```
+Ora creo il file CSS per lo stile del pannello amministratore: 
 
 ---
 

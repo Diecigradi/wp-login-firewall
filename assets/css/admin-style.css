@@ -1,0 +1,247 @@
+/**
+ * WP Login Firewall - Admin Panel Styles
+ * Version: 1.0
+ */
+
+.wplf-admin-wrap {
+    background: #f0f0f1;
+    margin: 20px 20px 0 0;
+    padding: 0;
+}
+
+.wplf-admin-wrap h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px 30px;
+    margin: 0 0 30px 0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wplf-admin-wrap h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* Griglia Statistiche */
+.wplf-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.wplf-stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wplf-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wplf-stat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #667eea;
+}
+
+.wplf-stat-content {
+    flex: 1;
+}
+
+.wplf-stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.wplf-stat-label {
+    font-size: 14px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Azioni */
+.wplf-actions {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.wplf-actions .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    height: auto;
+    line-height: 1;
+}
+
+.wplf-actions .button .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Stato Vuoto */
+.wplf-empty-state {
+    background: white;
+    padding: 60px 40px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.wplf-empty-state .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #27ae60;
+    margin-bottom: 20px;
+}
+
+.wplf-empty-state h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.wplf-empty-state p {
+    color: #7f8c8d;
+    font-size: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Tabella Log */
+.wplf-table-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.wplf-logs-table {
+    margin: 0 !important;
+    border: none !important;
+}
+
+.wplf-logs-table thead th {
+    background: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: #495057;
+    padding: 15px 12px;
+}
+
+.wplf-logs-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.wplf-logs-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.wplf-logs-table td {
+    padding: 15px 12px;
+    vertical-align: middle;
+}
+
+.wplf-logs-table code {
+    background: #f1f3f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #e74c3c;
+}
+
+/* Badge Motivi */
+.wplf-reason-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #e9ecef;
+    color: #495057;
+}
+
+.wplf-reason-badge.wplf-reason-danger {
+    background: #fee;
+    color: #c0392b;
+}
+
+.wplf-reason-badge.wplf-reason-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Colonne Specifiche */
+.column-timestamp {
+    width: 180px;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.column-ip {
+    width: 150px;
+}
+
+.column-username {
+    width: 200px;
+}
+
+.column-reason {
+    width: 180px;
+}
+
+.column-useragent {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #6c757d;
+    cursor: help;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .wplf-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .wplf-actions {
+        flex-direction: column;
+    }
+    
+    .wplf-actions .button {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .wplf-table-container {
+        overflow-x: auto;
+    }
+}
