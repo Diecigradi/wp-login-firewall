@@ -1467,3 +1467,43 @@ Mandami quello che vedi nella console, così capisco se i parametri ci sono nell
 
 ---
 
+_**User (2025-11-29 22:32Z)**_
+
+contenuto della console:
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+ajax-handler.js?ver=1.0:5 WP Login Firewall: Script loaded
+ajax-handler.js?ver=1.0:10 WP Login Firewall: Form not found
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ah! Ecco il problema! Il log dice **"Form not found"**, il che significa che quando carichi la pagina con i parametri `redirect_to` e `reauth`, il nostro form personalizzato (`#pre-login-form`) non viene trovato.
+
+Questo succede perché nella logica `handle_pre_login_logic()`, quando rileva il parametro `verified=1`, nascondiamo il nostro form, ma quando ci sono SOLO `redirect_to` e `reauth` (senza `verified=1`), dovremmo mostrarlo.
+
+Il problema è qui: il form viene nascosto in qualche modo. Verifichiamo cosa succede con questi parametri: Vedo! Il problema è che il form viene reso tramite l'hook `login_message`, ma potrebbe non essere caricato correttamente in tutte le situazioni. Il JavaScript cerca il form ma non lo trova perché WordPress potrebbe non aver ancora eseguito l'hook `login_message`.
+
+Vediamo se il form è effettivamente presente nella pagina. Quando vai su `/wp-login.php?redirect_to=...&reauth=1`, apri la console e digita:
+
+```javascript
+document.querySelector('#pre-login-container')
+```
+
+Se ritorna `null`, il form non c'è. Se ritorna un elemento, c'è ma il JavaScript non lo vede al momento giusto.
+
+Nel frattempo, aggiungo più debug per capire meglio: 
+```
+
+```
+Ora ricarica la pagina e mandami tutti i log della console. Questo mi dirà:
+1. Se il container `#pre-login-container` esiste
+2. Quanti form ci sono nella pagina
+3. Tutti gli ID presenti nella pagina
+
+Così possiamo capire perché il form non viene trovato!
+
+---
+

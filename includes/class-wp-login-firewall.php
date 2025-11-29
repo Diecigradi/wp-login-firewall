@@ -55,18 +55,20 @@ class WPLoginFirewall {
             add_action('login_head', function() {
                 echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
             });
-            add_action('login_message', array($this, 'show_pre_login_form'));
+            // Usa login_footer per inserire il form DOPO tutto il resto
+            add_action('login_footer', array($this, 'show_pre_login_form_in_footer'));
         }
     }
     
-    public function show_pre_login_form($message) {
-        // Previene la doppia renderizzazione
+    /**
+     * Mostra il form nel footer per assicurarsi che venga renderizzato
+     */
+    public function show_pre_login_form_in_footer() {
         if (self::$form_rendered) {
-            return $message;
+            return;
         }
         self::$form_rendered = true;
         
-        ob_start();
         ?>
         <div id="pre-login-container">
             <div class="pre-login-form">
@@ -85,8 +87,17 @@ class WPLoginFirewall {
                 </form>
             </div>
         </div>
+        <script type="text/javascript">
+        // Sposta il form prima del loginform nascosto
+        jQuery(document).ready(function($) {
+            var preLoginContainer = $('#pre-login-container');
+            var loginForm = $('#loginform');
+            if (preLoginContainer.length && loginForm.length) {
+                preLoginContainer.insertBefore(loginForm.parent());
+            }
+        });
+        </script>
         <?php
-        return $message . ob_get_clean();
     }
     
     public function verify_user() {
