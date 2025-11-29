@@ -23,18 +23,14 @@ define('WPLF_VERSION', '3.0.0');
 define('WPLF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-// TODO: Caricare le classi quando saranno create
-// require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-core.php';
-// require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-admin.php';
+// Carica la classe principale
+require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-core.php';
 
-// TODO: Inizializzare il plugin quando le classi saranno create
-// function wplf_init() {
-//     new WPLF_Core();
-//     if (is_admin()) {
-//         new WPLF_Admin();
-//     }
-// }
-// add_action('plugins_loaded', 'wplf_init');
+// Inizializza il plugin
+function wplf_init() {
+    new WPLF_Core();
+}
+add_action('plugins_loaded', 'wplf_init');
 
 // Activation hook
 register_activation_hook(__FILE__, function() {
