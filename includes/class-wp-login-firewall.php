@@ -82,30 +82,33 @@ class WPLoginFirewall {
         <input type="hidden" name="wplf_token" id="wplf-token" value="">
         
         <style>
-            /* Nascondi inizialmente i campi WordPress */
-            #loginform p:has(#user_login),
-            #loginform p:has(#user_pass),
+            /* Nascondi inizialmente i campi WordPress usando selettori più specifici */
+            #loginform > p {
+                display: none !important;
+            }
+            
             #loginform .forgetmenot,
             #loginform .submit {
-                display: none;
+                display: none !important;
                 transition: all 0.3s ease;
             }
             
             /* Mostra campi quando verificato */
-            #loginform.wplf-verified p:has(#user_pass),
+            #loginform.wplf-verified > p,
             #loginform.wplf-verified .forgetmenot,
             #loginform.wplf-verified .submit {
                 display: block !important;
                 animation: slideIn 0.3s ease;
             }
             
-            #loginform.wplf-verified p:has(#user_login) {
-                display: block !important;
-            }
-            
             #loginform.wplf-verified #user_login {
                 background: #f0f0f0;
                 color: #666;
+            }
+            
+            /* Nascondi il nostro step quando verificato */
+            #loginform.wplf-verified #wplf-verification-step {
+                display: none !important;
             }
             
             @keyframes slideIn {
