@@ -2071,3 +2071,36 @@ Fammi sapere se ora riesci a scrivere nei campi!
 
 ---
 
+_**User (2025-11-29 22:56Z)**_
+
+Ora non vedo più il form di wordpress dopo il redirect dalla verifica
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Il problema è che il CSS nasconde sempre il `#loginform`. Dobbiamo modificare il CSS per mostrarlo quando l'utente è verificato (quando c'è il parametro `verified=1` nell'URL). 
+
+Togliamo il CSS inline dal PHP e usiamo solo il CSS nel file che abbiamo già modificato con `:has()`: 
+```
+
+```
+
+```
+
+```
+Perfetto! Ora:
+
+1. JavaScript NON crea il form di verifica quando c'è `verified=1` nell'URL
+2. Il CSS con `:has(#pre-login-container)` nasconde `#loginform` SOLO quando esiste il container del form di verifica
+3. Quando non c'è il container (pagina con `verified=1`), il form WordPress viene mostrato normalmente
+
+Ricarica la pagina e prova di nuovo il flusso completo:
+1. Vai su `/wp-login.php` → dovresti vedere il form di verifica
+2. Inserisci username → redirect con `verified=1`
+3. Dovresti vedere il form WordPress per la password
+
+Funziona ora?
+
+---
+

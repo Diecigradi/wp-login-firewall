@@ -38,6 +38,8 @@
         if (loginForm.length > 0) {
             loginForm.before(formHtml);
             console.log('WP Login Firewall: Form inserted before #loginform');
+            // Nascondi anche nav e backtoblog
+            $('#nav, #backtoblog').hide();
             return true;
         }
         
