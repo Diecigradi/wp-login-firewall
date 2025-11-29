@@ -63,21 +63,33 @@ class WPLoginFirewall {
                     console.log('Username field exists:', $userLogin.length);
                     console.log('Readonly:', $userLogin.prop('readonly'));
                     console.log('Disabled:', $userLogin.prop('disabled'));
-                    console.log('Attributes:', $userLogin[0] ? $userLogin[0].attributes : 'none');
+                    console.log('Pointer events:', $userLogin.css('pointer-events'));
+                    console.log('User-select:', $userLogin.css('user-select'));
                     
                     // Precompila il campo username
                     $userLogin.val('<?php echo $username; ?>');
                     
-                    // Rimuovi tutti gli attributi che potrebbero bloccare l'input
+                    // Rimuovi tutti gli attributi e stili che potrebbero bloccare l'input
                     $userLogin.prop('readonly', false)
                              .prop('disabled', false)
                              .removeAttr('readonly')
                              .removeAttr('disabled')
-                             .removeAttr('autocomplete');
+                             .css({
+                                 'pointer-events': 'auto',
+                                 'user-select': 'text',
+                                 '-webkit-user-select': 'text',
+                                 '-moz-user-select': 'text',
+                                 '-ms-user-select': 'text'
+                             });
+                    
+                    // Forza la rimozione di event listeners di WordPress che potrebbero bloccare
+                    var newField = $userLogin.clone(false);
+                    $userLogin.replaceWith(newField);
+                    newField.val('<?php echo $username; ?>');
                     
                     // Test se possiamo scrivere
-                    $userLogin.on('keydown keypress keyup', function(e) {
-                        console.log('Key event:', e.type, e.key);
+                    newField.on('keydown keypress keyup input change', function(e) {
+                        console.log('Key event:', e.type, e.key || e.which);
                     });
                     
                     // Focus automatico sul campo password

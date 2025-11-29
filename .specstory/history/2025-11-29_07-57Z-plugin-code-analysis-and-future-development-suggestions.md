@@ -2211,3 +2211,31 @@ Prova ora e dimmi se funziona tutto! 🎯
 
 ---
 
+_**User (2025-11-29 23:13Z)**_
+
+Ora il nome utente è precompilato ma non posso modificare o scrivere nel campo utente mentre nel campo password si
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Il problema è che WordPress imposta `readonly` sul campo username. Dobbiamo forzare la rimozione dell'attributo `readonly` in modo più aggressivo: 
+```
+
+```
+
+
+---
+
+_**User (2025-11-29 23:13Z)**_
+
+Il campo input del nome utente non ha readonly
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Allora il problema non è `readonly`. Deve essere qualcos'altro che blocca l'input. Controlliamo se ci sono altri attributi o script che interferiscono. Proviamo a verificare cosa sta succedendo: 
+
+---
+
