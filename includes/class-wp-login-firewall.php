@@ -45,13 +45,51 @@ class WPLoginFirewall {
 
         // Se l'utente è già verificato, popola il campo username e nascondi il pre-login form
         if (isset($_GET['verified']) && $_GET['verified'] === '1' && isset($_GET['user'])) {
-            // Non serve più CSS inline, gestiamo tutto via CSS con :has()
+            add_action('login_head', function() {
+                echo '<style>#pre-login-container { display: none; }</style>';
+            });
             add_filter('login_username', function($username) {
                 return esc_attr(rawurldecode($_GET['user']));
             });
         } else {
-            // Non serve più CSS inline, il form viene creato da JavaScript e il CSS nasconde automaticamente loginform
+            // Altrimenti, nascondi il form di login standard e mostra il nostro
+            add_action('login_head', function() {
+                echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
+            });
+            add_filter('login_message', array($this, 'show_pre_login_form'));
         }
+    }
+    
+    /**
+     * Mostra il form di pre-login
+     */
+    public function show_pre_login_form($message) {
+        if (self::$form_rendered) {
+            return $message;
+        }
+        self::$form_rendered = true;
+        
+        ob_start();
+        ?>
+        <div id="pre-login-container">
+            <div class="pre-login-form">
+                <h2>Verifica Accesso</h2>
+                
+                <div class="error-message" id="error-message"></div>
+                <div class="success-message" id="success-message"></div>
+                <div class="loading" id="loading">Verifica in corso...</div>
+                
+                <form id="pre-login-form" method="post">
+                    <div class="form-group">
+                        <label for="wplf_username">Nome utente o Email</label>
+                        <input type="text" id="wplf_username" name="wplf_username" required autocomplete="username">
+                    </div>
+                    <button type="submit" class="submit-button">Verifica Accesso</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        return $message . ob_get_clean();
     }
     
     public function verify_user() {

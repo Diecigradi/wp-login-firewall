@@ -2104,3 +2104,32 @@ Funziona ora?
 
 ---
 
+_**User (2025-11-29 22:59Z)**_
+
+Si ora vedo il form di worpdress ma non posso scrivere nei campi
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Il problema è che il CSS con `:has()` potrebbe non essere supportato o c'è un conflitto. Verifichiamo il CSS e usiamo un selettore più semplice. Inoltre, assicuriamoci che il form di WordPress non abbia attributi `disabled` o altri problemi.
+
+Modifichiamo il CSS per essere più specifico e rimuoviamo la regola `:has()` che potrebbe causare problemi: 
+```
+
+```
+
+```
+
+```
+Ora ricarica e prova. Se ancora non riesci a scrivere nei campi, apri la console del browser e esegui questo comando per verificare se i campi sono disabilitati:
+
+```javascript
+console.log('Input disabled:', $('#user_login').prop('disabled'));
+console.log('Input readonly:', $('#user_login').prop('readonly'));
+```
+
+E fammi sapere cosa dice!
+
+---
+

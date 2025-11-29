@@ -120,13 +120,6 @@ body.login h1 {
     display: none;
 }
 
-/* Quando il nostro container è presente, nascondi il form WordPress */
-#pre-login-container ~ #loginform,
-#pre-login-container ~ .login #nav,
-#pre-login-container ~ .login #backtoblog {
-    display: none !important;
-}
-
 /* Container principale */
 #pre-login-container {
     background: var(--wplf-card-bg);
