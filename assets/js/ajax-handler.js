@@ -30,6 +30,9 @@ jQuery(document).ready(function($) {
                     }, 1000);
                 } else {
                     errorDiv.text(response.data).show();
+                    if (response.data.includes('tentativi')) {
+                        $('#pre-login-form button').prop('disabled', true);
+                    }
                 }
             },
             error: function() {
