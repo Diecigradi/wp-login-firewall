@@ -45,18 +45,12 @@ class WPLoginFirewall {
 
         // Se l'utente è già verificato, popola il campo username e nascondi il pre-login form
         if (isset($_GET['verified']) && $_GET['verified'] === '1' && isset($_GET['user'])) {
-            add_action('login_head', function() {
-                // Nascondi il nostro form e MOSTRA il form standard di WordPress
-                echo '<style>#pre-login-container { display: none !important; } #loginform { display: block !important; } .login #nav, .login #backtoblog { display: block !important; }</style>';
-            });
+            // Non serve più CSS inline, gestiamo tutto via CSS con :has()
             add_filter('login_username', function($username) {
                 return esc_attr(rawurldecode($_GET['user']));
             });
         } else {
-            // Altrimenti, nascondi il form di login standard e mostra il nostro
-            add_action('login_head', function() {
-                echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
-            });
+            // Non serve più CSS inline, il form viene creato da JavaScript e il CSS nasconde automaticamente loginform
         }
     }
     

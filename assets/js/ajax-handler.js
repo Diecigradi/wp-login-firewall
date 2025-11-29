@@ -3,6 +3,12 @@
     
     // Funzione per creare e inserire il form se non esiste
     function createFormIfNeeded() {
+        // Non creare il form se l'utente è già verificato
+        if (window.location.search.indexOf('verified=1') !== -1) {
+            console.log('WP Login Firewall: User already verified, skipping form creation');
+            return false;
+        }
+        
         if ($('#pre-login-container').length > 0) {
             console.log('WP Login Firewall: Form already exists in DOM');
             return true;
