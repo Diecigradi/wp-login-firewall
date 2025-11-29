@@ -2497,7 +2497,7 @@ public function verify_token_before_auth($user, $username, $password) {
 
 ---
 
-_**User (2025-11-29 23:21Z)**_
+_**User (2025-11-29 23:25Z)**_
 
 OK
 
@@ -2519,7 +2519,84 @@ Iniziamo:
 ```
 
 ```
-Ora continuiamo con la parte rimanente del file e poi riscriviamo il JavaScript: Bene, il file PHP è già aggiornato. Ora rimuoviamo il codice vecchio che non serve più e riscriviamo completamente il JavaScript: 
+Ora continuiamo con la parte rimanente del file e poi riscriviamo il JavaScript: Bene, il file PHP è già aggiornato. Ora rimuoviamo il codice vecchio che non serve più e riscriviamo completamente il JavaScript: Vedo che c'è codice duplicato nel file. Devo pulirlo completamente. Riscriviamo l'intero file da zero in modo pulito: Ora riscriviamo il JavaScript completamente per il nuovo approccio: Perfetto! Ora committiamo tutto e testiamo: ## 🎉 Riscrittura Completata!
+
+Ho completamente riscritto il plugin con il **nuovo approccio a form progressivo**. Ecco cosa è cambiato:
+
+### ✅ Nuovo Funzionamento
+
+**1. Singola Pagina, Nessun Redirect**
+- L'utente resta sempre su `/wp-login.php`
+- Il form si "evolve" progressivamente
+
+**2. Flusso Utente:**
+```
+Step 1: Vedi solo campo USERNAME → inserisci → click "Verifica"
+         ↓ AJAX
+Step 2: Campo username diventa readonly
+        Appare campo PASSWORD (animazione slideDown)
+        Focus automatico sulla password
+         ↓ Submit normale
+Step 3: WordPress autentica (con token validation server-side)
+        Login completato!
+```
+
+**3. Sicurezza Server-Side:**
+- ✅ Token obbligatorio nel POST
+- ✅ Token usa-e-getta con scadenza 5 minuti
+- ✅ Verifica nel filtro `authenticate` PRIMA dell'autenticazione
+- ✅ Logging di tutti i tentativi di bypass
+- ✅ Email alert per tentativi multipli
+
+**4. Codice Pulito:**
+- ~240 righe PHP (vs ~480 prima)
+- ~120 righe JavaScript (vs ~150 prima)
+- Zero redirect, zero parametri URL
+- Zero conflitti DOM/timing
+
+---
+
+### 🧪 Test Ora
+
+1. **Vai su** `/wp-login.php`
+2. **Dovresti vedere:** Form con solo campo username
+3. **Inserisci username** → click "Verifica Username"
+4. **Dovrebbe:** 
+   - Nascondere il form di verifica
+   - Mostrare campo password
+   - Username precompilato e readonly
+5. **Inserisci password** → click "Accedi"
+6. **Login dovrebbe funzionare!**
+
+**Dimmi come va!** Se tutto funziona, possiamo anche aggiornare il CSS per rendere il tutto ancora più bello visivamente. 🎨
+
+---
+
+_**User (2025-11-29 23:27Z)**_
+
+ecco cosa vedo
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Vedo il problema! Il form si sta duplicando - ci sono DUE step di verifica visibili contemporaneamente, più il campo password di WordPress. Il CSS per nascondere i campi WordPress non sta funzionando correttamente.
+
+Il problema è nel selettore CSS `:has()` che non è supportato in tutti i browser. Dobbiamo usare un approccio più diretto: Il problema è il selettore `:has()`. Risolviamolo usando ID e classi specifiche invece: 
+```
+
+```
+Perfetto! Ora ho:
+1. ✅ Sostituito `:has()` con selettori più semplici `#loginform > p` che nasconde tutti i paragrafi figli diretti
+2. ✅ Aggiunto regola per nascondere `#wplf-verification-step` quando il form è verificato
+3. ✅ Usato `!important` per essere sicuri che le regole vengano applicate
+
+**Ricarica la pagina** e dovresti vedere:
+- Solo il form di verifica username (senza duplicati)
+- Campo password nascosto
+- Dopo verifica: scompare form verifica, appare password
+
+Fammi sapere se ora funziona correttamente! 🎯
 
 ---
 

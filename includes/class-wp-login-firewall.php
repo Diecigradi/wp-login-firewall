@@ -11,6 +11,7 @@ class WPLoginFirewall {
     private const MAX_ATTEMPTS = 5;
     private const LOCKOUT_TIME = 15 * MINUTE_IN_SECONDS;
     private const TOKEN_LIFETIME = 5 * MINUTE_IN_SECONDS;
+    private static $ui_rendered = false;
     
     public function __construct() {
         add_action('login_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -52,6 +53,12 @@ class WPLoginFirewall {
      * Inietta l'interfaccia di verifica nel form di login
      */
     public function inject_verification_ui() {
+        // Previeni doppia renderizzazione
+        if (self::$ui_rendered) {
+            return;
+        }
+        self::$ui_rendered = true;
+        
         ?>
         <!-- Step 1: Verifica Username -->
         <div id="wplf-verification-step" class="wplf-step wplf-active">
