@@ -2600,3 +2600,75 @@ Fammi sapere se ora funziona correttamente! 🎯
 
 ---
 
+_**User (2025-11-29 23:29Z)**_
+
+Non è cambiato. Ecco il contenuto della console del browser:
+
+jquery-migrate.min.js?ver=3.4.1:2 JQMIGRATE: Migrate is installed, version 3.4.1
+wp-login.php:1 [DOM] Found 2 elements with non-unique id #wplf-token: (More info: https://goo.gl/9p2vKq) <input type=​"hidden" name=​"wplf_token" id=​"wplf-token" value>​ <input type=​"hidden" name=​"wplf_token" id=​"wplf-token" value>​
+wp-login.php:1 [DOM] Found 2 elements with non-unique id #wplf-username-input: (More info: https://goo.gl/9p2vKq) <input type=​"text" id=​"wplf-username-input" class=​"wplf-input" placeholder=​"Inserisci username o email" autocomplete=​"username">​ <input type=​"text" id=​"wplf-username-input" class=​"wplf-input" placeholder=​"Inserisci username o email" autocomplete=​"username">​
+wp-login.php:1 [DOM] Found 2 elements with non-unique id #wplf-verify-btn: (More info: https://goo.gl/9p2vKq) <button type=​"button" id=​"wplf-verify-btn" class=​"wplf-button wplf-button-primary">​ Verifica Username ​</button>​ <button type=​"button" id=​"wplf-verify-btn" class=​"wplf-button wplf-button-primary">​ Verifica Username ​</button>​
+
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ah! Il problema è che il nostro codice viene inserito **DUE VOLTE**! L'hook `login_form` viene chiamato due volte. Dobbiamo aggiungere un flag per prevenire la doppia renderizzazione: 
+```
+
+```
+
+```
+
+```
+Perfetto! Ho aggiunto un flag statico `$ui_rendered` che previene la doppia renderizzazione. 
+
+**Ricarica la pagina ora** e dovresti vedere:
+- ✅ Un solo form di verifica (no duplicati)
+- ✅ Nessun errore nella console
+- ✅ Form pulito e funzionante
+
+Prova di nuovo e dimmi se ora va tutto bene! 🎯
+
+---
+
+_**User (2025-11-29 23:31Z)**_
+
+Ora vedo questo
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ottimo! Ora è molto meglio - vedo un solo form di verifica. Prova a:
+
+1. **Inserire il tuo username** nel campo "Inserisci username o email"
+2. **Cliccare "Verifica Username"**
+
+Dimmi cosa succede! Dovrebbe:
+- Verificare via AJAX
+- Nascondere il box "Verifica Accesso"
+- Mostrare il campo Password
+- Permetterti di fare login
+
+Fai il test e dimmi se funziona o se ci sono errori! 🔍
+
+---
+
+_**User (2025-11-29 23:31Z)**_
+
+Vedo già il campo password
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ah, il CSS non sta nascondendo correttamente il campo password! Il problema è che WordPress genera HTML diverso da quello che ci aspettiamo. Aggiungiamo più debug e CSS più specifico: 
+```
+
+```
+
+
+---
+

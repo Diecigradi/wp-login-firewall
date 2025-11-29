@@ -89,19 +89,17 @@ class WPLoginFirewall {
         <input type="hidden" name="wplf_token" id="wplf-token" value="">
         
         <style>
-            /* Nascondi inizialmente i campi WordPress usando selettori più specifici */
-            #loginform > p {
-                display: none !important;
-            }
-            
+            /* Nascondi inizialmente TUTTI i campi WordPress */
+            #loginform > p,
+            #loginform > .user-pass-wrap,
             #loginform .forgetmenot,
             #loginform .submit {
                 display: none !important;
-                transition: all 0.3s ease;
             }
             
             /* Mostra campi quando verificato */
             #loginform.wplf-verified > p,
+            #loginform.wplf-verified > .user-pass-wrap,
             #loginform.wplf-verified .forgetmenot,
             #loginform.wplf-verified .submit {
                 display: block !important;
