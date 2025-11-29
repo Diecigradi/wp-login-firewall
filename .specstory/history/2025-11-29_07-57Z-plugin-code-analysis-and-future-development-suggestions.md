@@ -856,6 +856,27 @@ Ottimo! Ora il plugin funziona (come vedo dai log "Response received"), ma abbia
 Risolvo entrambi i problemi:
 1. Aggiungo un flag per evitare che il form venga renderizzato più volte
 2. Commento temporaneamente la logica di rate limiting 
+```
+
+```
+Perfetto! Ho applicato le seguenti correzioni:
+
+1. **Aggiunto un flag statico `$form_rendered`** che previene la doppia renderizzazione del form anche quando WordPress richiama l'hook `login_message` più volte
+2. **Disabilitato temporaneamente il rate limiting** commentando tutto il codice che controlla e limita i tentativi di accesso, così puoi fare tutti i test che vuoi senza essere bloccato
+
+Ora eseguo il commit e il push. Fatto! Ora ricarica la pagina e dovresti vedere un solo form. Il plugin dovrebbe funzionare correttamente e potrai fare tutti i test che vuoi senza limitazioni di tentativi. Fammi sapere come va!
+
+---
+
+_**User (2025-11-29 15:36Z)**_
+
+Bene ora funziona. Vedo un unico form e se inserisco una username valida o una mail valida il reindirizzamento funziona mentre se inserisco un dato scorretto cvompare il messaggio: Utente non trovato nel sistema. Ora vorrei che l'interfaccia di veifica di login fosse completamente customizzata rispetto a quella standard di wordpress
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Sono contento che funzioni 
 
 ---
 
