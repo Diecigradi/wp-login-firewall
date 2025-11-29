@@ -109,7 +109,7 @@ class WPLoginFirewall {
             return;
         }
         
-        $username = sanitize_text_field($_POST['username']);
+        $username = sanitize_text_field($_POST['wplf_username']);
         
         // Verifica se è un'email o username
         if (is_email($username)) {
