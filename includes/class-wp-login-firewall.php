@@ -9,7 +9,6 @@ class WPLoginFirewall {
     
     public function __construct() {
         add_action('login_enqueue_scripts', array($this, 'enqueue_scripts'));
-        add_action('login_form', array($this, 'show_pre_login_form'));
         add_action('login_init', array($this, 'handle_pre_login_logic'));
     }
 
@@ -48,14 +47,16 @@ class WPLoginFirewall {
                 return esc_attr(rawurldecode($_GET['user']));
             });
         } else {
-            // Altrimenti, nascondi il form di login standard
+            // Altrimenti, nascondi il form di login standard e mostra il nostro
             add_action('login_head', function() {
                 echo '<style>#loginform { display: none; } .login #nav, .login #backtoblog { display: none; } </style>';
             });
+            add_action('login_message', array($this, 'show_pre_login_form'));
         }
     }
     
-    public function show_pre_login_form() {
+    public function show_pre_login_form($message) {
+        ob_start();
         ?>
         <div id="pre-login-container">
             <div class="pre-login-form">
@@ -75,6 +76,7 @@ class WPLoginFirewall {
             </div>
         </div>
         <?php
+        return $message . ob_get_clean();
     }
     
     public function verify_user() {
