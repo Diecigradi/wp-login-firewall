@@ -55,9 +55,6 @@ wp-secure-login/
 │   └── pre-login-form.css       # Stili del form pre-login
 ├── js/
 │   └── ajax-handler.js          # Gestione AJAX
-├── includes/                     # Classi e funzioni PHP (futuro)
-├── languages/                    # File di traduzione (futuro)
-├── assets/                       # Immagini e risorse
 ├── custom-login-security.php    # File principale del plugin
 ├── README.md                     # Questo file
 └── LICENSE                       # Licenza GPL-2.0
