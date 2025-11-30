@@ -44,20 +44,51 @@ class WPLF_Rate_Limiter {
     }
     
     /**
-     * Incrementa il contatore di tentativi per l'IP
+     * Incrementa il contatore di tentativi per l'IP in modo atomico
+     * 
+     * Usa wp_cache_add() per prevenire race condition.
+     * Se fallisce (chiave esiste), fa increment atomico del valore esistente.
      */
     public function increment_attempts() {
         $ip = $this->get_client_ip();
         $transient_key = 'wplf_rate_' . md5($ip);
-        
-        $attempts = get_transient($transient_key);
         $time_window = get_option('wplf_rate_limit_minutes', 15) * 60;
         
-        if ($attempts === false) {
+        // Tentativo atomico: crea se non esiste
+        if (wp_cache_add($transient_key, 1, 'transient', $time_window)) {
+            // Successo: transient creato con valore 1
             set_transient($transient_key, 1, $time_window);
-        } else {
-            set_transient($transient_key, $attempts + 1, $time_window);
+            return;
         }
+        
+        // Transient esiste già: incrementa in modo race-safe
+        // Usa database diretto per lock atomico
+        global $wpdb;
+        
+        $option_name = '_transient_' . $transient_key;
+        $timeout_name = '_transient_timeout_' . $transient_key;
+        
+        // Lock row e incrementa atomicamente
+        $result = $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->options} 
+            SET option_value = CAST(option_value AS UNSIGNED) + 1 
+            WHERE option_name = %s 
+            LIMIT 1",
+            $option_name
+        ));
+        
+        // Se update fallisce, il transient è scaduto - ricrea
+        if ($result === 0) {
+            set_transient($transient_key, 1, $time_window);
+            
+            // Imposta timeout se non esiste
+            if (!get_option($timeout_name)) {
+                update_option($timeout_name, time() + $time_window, false);
+            }
+        }
+        
+        // Aggiorna cache object
+        wp_cache_delete($transient_key, 'transient');
     }
     
     /**
