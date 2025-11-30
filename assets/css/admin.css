@@ -1,0 +1,194 @@
+/**
+ * WP Login Firewall - Admin Styles
+ */
+
+.wplf-admin {
+    max-width: 1400px;
+}
+
+.wplf-admin h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wplf-admin h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* Stats Grid */
+.wplf-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.wplf-stat-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.wplf-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.wplf-stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 24px;
+}
+
+.wplf-stat-card.wplf-success .wplf-stat-icon {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+.wplf-stat-card.wplf-error .wplf-stat-icon {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+}
+
+.wplf-stat-card.wplf-warning .wplf-stat-icon {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+}
+
+.wplf-stat-content {
+    flex: 1;
+}
+
+.wplf-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.wplf-stat-label {
+    font-size: 14px;
+    color: #718096;
+    font-weight: 500;
+}
+
+/* Section */
+.wplf-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin: 20px 0;
+}
+
+.wplf-section h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Actions */
+.wplf-actions {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.wplf-actions .button .dashicons {
+    margin-top: 3px;
+}
+
+/* Empty State */
+.wplf-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.wplf-empty-state .dashicons {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #cbd5e0;
+    margin-bottom: 15px;
+}
+
+.wplf-empty-state h2 {
+    font-size: 20px;
+    color: #2d3748;
+    margin: 0 0 10px 0;
+}
+
+.wplf-empty-state p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Badges */
+.wplf-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wplf-badge-success {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.wplf-badge-error {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.wplf-badge-warning {
+    background: #feebc8;
+    color: #7c2d12;
+}
+
+/* Table Improvements */
+.wplf-admin table code {
+    background: #f7fafc;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #667eea;
+}
+
+.wplf-admin table .button-small {
+    padding: 3px 10px;
+    height: auto;
+    line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .wplf-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .wplf-actions {
+        flex-direction: column;
+    }
+    
+    .wplf-actions .button {
+        width: 100%;
+    }
+}

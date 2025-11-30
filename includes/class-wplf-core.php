@@ -12,10 +12,23 @@ if (!defined('ABSPATH')) {
 
 class WPLF_Core {
     
+    private $rate_limiter;
+    private $logger;
+    private $ip_blocker;
+    
     /**
      * Costruttore
      */
     public function __construct() {
+        // Carica le classi di sicurezza
+        require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-rate-limiter.php';
+        require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-logger.php';
+        require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-ip-blocker.php';
+        
+        $this->rate_limiter = new WPLF_Rate_Limiter();
+        $this->logger = new WPLF_Logger();
+        $this->ip_blocker = new WPLF_IP_Blocker();
+        
         // Intercetta il login
         add_action('login_init', array($this, 'intercept_login'));
         
@@ -27,6 +40,13 @@ class WPLF_Core {
      * Intercetta l'accesso a wp-login.php
      */
     public function intercept_login() {
+        // Verifica se l'IP è bloccato
+        if ($this->ip_blocker->is_blocked()) {
+            $this->logger->log_attempt('', 'blocked', 'IP bloccato - tentativo di accesso');
+            $this->show_blocked_page();
+            exit;
+        }
+        
         // Se c'è un token valido, lascia passare
         if (isset($_GET['wplf_token']) && $this->validate_token($_GET['wplf_token'])) {
             return;
@@ -119,6 +139,7 @@ class WPLF_Core {
     public function ajax_verify_username() {
         // Verifica nonce
         if (!isset($_POST['wplf_nonce']) || !wp_verify_nonce($_POST['wplf_nonce'], 'wplf_verify')) {
+            $this->logger->log_attempt('', 'failed', 'Nonce non valido');
             wp_send_json_error('Richiesta non valida');
         }
         
@@ -128,6 +149,13 @@ class WPLF_Core {
             wp_send_json_error('Inserisci un username o email');
         }
         
+        // Verifica rate limiting
+        if ($this->rate_limiter->is_rate_limited()) {
+            $this->logger->log_attempt($username, 'rate_limited', 'Rate limit superato');
+            $time_remaining = $this->rate_limiter->get_formatted_time_remaining();
+            wp_send_json_error('Troppi tentativi. Riprova tra ' . $time_remaining);
+        }
+        
         // Verifica se l'utente esiste
         $user = get_user_by('login', $username);
         if (!$user) {
@@ -135,8 +163,24 @@ class WPLF_Core {
         }
         
         if (!$user) {
-            wp_send_json_error('Username o email non trovato');
+            // Incrementa tentativi
+            $this->rate_limiter->increment_attempts();
+            
+            // Log tentativo fallito
+            $this->logger->log_attempt($username, 'failed', 'Username/email non trovato');
+            
+            // Verifica se bloccare IP
+            $client_ip = $this->get_client_ip();
+            $this->ip_blocker->check_and_block($client_ip, $this->logger);
+            
+            wp_send_json_error('Credenziali non valide');
         }
+        
+        // Successo - resetta rate limit
+        $this->rate_limiter->reset_rate_limit();
+        
+        // Log successo
+        $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
         
         // Genera token sicuro
         $token = wp_generate_password(32, false);
@@ -180,5 +224,60 @@ class WPLF_Core {
         delete_transient('wplf_token_' . $token);
         
         return true;
+    }
+    
+    /**
+     * Ottiene l'IP del client
+     */
+    private function get_client_ip() {
+        $ip = '';
+        
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } else {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+    }
+    
+    /**
+     * Mostra la pagina di IP bloccato
+     */
+    private function show_blocked_page() {
+        $time_remaining = $this->ip_blocker->get_formatted_time_remaining();
+        
+        ?>
+        <!DOCTYPE html>
+        <html lang="it">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Accesso Bloccato - <?php echo get_bloginfo('name'); ?></title>
+            <link rel="stylesheet" href="<?php echo WPLF_PLUGIN_URL; ?>assets/css/style.css">
+        </head>
+        <body class="wplf-page">
+            <div class="wplf-container">
+                <div class="wplf-card">
+                    <div class="wplf-header">
+                        <div class="wplf-icon">🚫</div>
+                        <h1 class="wplf-title">Accesso Temporaneamente Bloccato</h1>
+                        <p class="wplf-subtitle">Il tuo indirizzo IP è stato bloccato per motivi di sicurezza</p>
+                    </div>
+                    
+                    <div class="wplf-message wplf-error" style="display: block;">
+                        Troppi tentativi di accesso falliti. Riprova tra <strong><?php echo esc_html($time_remaining); ?></strong>.
+                    </div>
+                    
+                    <div class="wplf-footer">
+                        <a href="<?php echo home_url(); ?>" class="wplf-back-link">← Torna al sito</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        <?php
     }
 }

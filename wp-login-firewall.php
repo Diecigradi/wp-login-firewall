@@ -26,9 +26,18 @@ define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
 // Carica la classe principale
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-core.php';
 
+// Carica admin solo nel backend
+if (is_admin()) {
+    require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-admin.php';
+}
+
 // Inizializza il plugin
 function wplf_init() {
     new WPLF_Core();
+    
+    if (is_admin()) {
+        new WPLF_Admin();
+    }
 }
 add_action('plugins_loaded', 'wplf_init');
 
