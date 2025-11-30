@@ -228,7 +228,7 @@ class WPLF_IP_Blocker {
         $failed_count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table} 
             WHERE ip = %s 
-            AND status = 'failed' 
+            AND (status = 'failed' OR status = 'rate_limited') 
             AND timestamp > %s",
             $ip,
             $one_hour_ago

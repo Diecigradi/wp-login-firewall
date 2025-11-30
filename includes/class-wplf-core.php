@@ -161,7 +161,10 @@ class WPLF_Core {
             
             // Verifica se bloccare IP anche per rate limiting
             $client_ip = $this->get_client_ip();
-            $this->ip_blocker->check_and_block($client_ip, $this->logger);
+            if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
+                wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
+                    get_option('wplf_ip_block_duration', 24) . ' ore.');
+            }
             
             $time_remaining = $this->rate_limiter->get_formatted_time_remaining();
             wp_send_json_error('Troppi tentativi. Riprova tra ' . $time_remaining);
@@ -173,16 +176,21 @@ class WPLF_Core {
             $user = get_user_by('email', $username);
         }
         
+        // Ottiene IP per logging e controlli
+        $client_ip = $this->get_client_ip();
+        
         if (!$user) {
-            // Incrementa tentativi
-            $this->rate_limiter->increment_attempts();
-            
-            // Log tentativo fallito
+            // Log tentativo fallito PRIMA di incrementare rate limiter
             $this->logger->log_attempt($username, 'failed', 'Username/email non trovato');
             
-            // Verifica se bloccare IP
-            $client_ip = $this->get_client_ip();
-            $this->ip_blocker->check_and_block($client_ip, $this->logger);
+            // Incrementa tentativi rate limiter
+            $this->rate_limiter->increment_attempts();
+            
+            // Verifica se bloccare IP (conta tutti i failed + rate_limited nell'ultima ora)
+            if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
+                wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
+                    get_option('wplf_ip_block_duration', 24) . ' ore.');
+            }
             
             wp_send_json_error('Credenziali non valide');
         }
