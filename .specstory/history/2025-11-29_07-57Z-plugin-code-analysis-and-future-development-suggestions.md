@@ -4190,9 +4190,62 @@ Vuoi che proceda con questa implementazione?
 
 ---
 
-_**User (2025-11-30 08:59Z)**_
+_**User (2025-11-30 09:02Z)**_
 
 ok
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+✓ Fatto. Ho aggiunto l'opzione nelle impostazioni:
+
+**Modifiche:**
+- Nuovo checkbox "Whitelist Amministratori" con avviso di sicurezza
+- Opzione salvata come `wplf_admin_whitelist` (default: abilitato)
+- Logica condizionale: admin bypass attivo solo se opzione è 1
+- Ripristina predefiniti aggiornato
+
+**Comportamento:**
+- **Abilitato** (default): admin bypassa sempre rate limiting e IP blocking
+- **Disabilitato**: admin segue le stesse regole degli utenti normali
+
+Commit `8cdb89b` pushato su GitHub.
+
+---
+
+_**User (2025-11-30 09:07Z)**_
+
+Ok. Ora vorrei sapere cosa succede se disinstallo il plugin. Vengono rimosse tutte le tabelle create e ripulito completamente il database?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+No, al momento la **disinstallazione NON rimuove i dati**. Quando disattivi il plugin vengono solo eliminati i transient temporanei, ma:
+
+**Cosa rimane nel database:**
+- ✗ Tabelle `wp_wplf_logs` e `wp_wplf_blocked_ips`
+- ✗ Opzioni in `wp_options`: `wplf_rate_limit_attempts`, `wplf_rate_limit_minutes`, `wplf_ip_block_threshold`, `wplf_ip_block_duration`, `wplf_log_retention_days`, `wplf_admin_whitelist`, `wplf_db_version`
+
+**Cosa viene rimosso:**
+- ✓ Solo i transient temporanei (token di verifica, rate limit)
+
+Per una **pulizia completa** devo creare il file `uninstall.php` che WordPress esegue automaticamente quando disinstalli (non disattivi) il plugin. Vuoi che lo aggiunga?
+
+---
+
+_**User (2025-11-30 09:07Z)**_
+
+si
 
 ---
 

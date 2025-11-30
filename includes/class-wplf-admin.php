@@ -78,7 +78,7 @@ class WPLF_Admin {
             'Come Funziona',
             'manage_options',
             'wplf-help',
-            array($this, 'render_help')
+            array($this, 'render_help_page')
         );
         
         add_submenu_page(
