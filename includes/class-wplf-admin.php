@@ -250,15 +250,15 @@ class WPLF_Admin {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($blocked_ips as $ip => $data): ?>
+                        <?php foreach ($blocked_ips as $block): ?>
                             <tr>
-                                <td><code><?php echo esc_html($ip); ?></code></td>
-                                <td><?php echo esc_html($data['blocked_at']); ?></td>
-                                <td><?php echo esc_html($this->ip_blocker->get_formatted_time_remaining($ip)); ?></td>
-                                <td><?php echo esc_html($data['reason']); ?></td>
-                                <td><?php echo esc_html($data['attempts']); ?></td>
+                                <td><code><?php echo esc_html($block['ip']); ?></code></td>
+                                <td><?php echo esc_html($block['blocked_at']); ?></td>
+                                <td><?php echo esc_html($this->ip_blocker->get_formatted_time_remaining($block['ip'])); ?></td>
+                                <td><?php echo esc_html($block['reason']); ?></td>
+                                <td><?php echo esc_html($block['attempts']); ?></td>
                                 <td>
-                                    <button class="button button-small wplf-unblock" data-ip="<?php echo esc_attr($ip); ?>">
+                                    <button class="button button-small wplf-unblock" data-ip="<?php echo esc_attr($block['ip']); ?>">
                                         Sblocca
                                     </button>
                                 </td>

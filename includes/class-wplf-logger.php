@@ -13,16 +13,6 @@ if (!defined('ABSPATH')) {
 class WPLF_Logger {
     
     /**
-     * Chiave option per i log
-     */
-    const LOG_OPTION_KEY = 'wplf_access_logs';
-    
-    /**
-     * Max numero di log da mantenere
-     */
-    const MAX_LOGS = 1000;
-    
-    /**
      * Ottiene l'IP del client
      */
     private function get_client_ip() {
@@ -47,28 +37,24 @@ class WPLF_Logger {
      * @param string $message Messaggio descrittivo
      */
     public function log_attempt($username, $status, $message = '') {
-        $logs = get_option(self::LOG_OPTION_KEY, array());
+        global $wpdb;
         
-        $log_entry = array(
-            'timestamp' => current_time('mysql'),
-            'ip' => $this->get_client_ip(),
-            'username' => sanitize_text_field($username),
-            'status' => $status,
-            'message' => sanitize_text_field($message),
-            'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_AGENT'], 0, 255) : 'Unknown'
+        $table = WPLF_Database::get_logs_table();
+        
+        $wpdb->insert(
+            $table,
+            array(
+                'timestamp' => current_time('mysql'),
+                'ip' => $this->get_client_ip(),
+                'username' => sanitize_text_field($username),
+                'status' => $status,
+                'message' => sanitize_text_field($message),
+                'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_AGENT'], 0, 255) : 'Unknown'
+            ),
+            array('%s', '%s', '%s', '%s', '%s', '%s')
         );
         
-        // Aggiungi in cima
-        array_unshift($logs, $log_entry);
-        
-        // Mantieni solo gli ultimi MAX_LOGS
-        if (count($logs) > self::MAX_LOGS) {
-            $logs = array_slice($logs, 0, self::MAX_LOGS);
-        }
-        
-        update_option(self::LOG_OPTION_KEY, $logs, false);
-        
-        return $log_entry;
+        return $wpdb->insert_id;
     }
     
     /**
@@ -78,13 +64,17 @@ class WPLF_Logger {
      * @return array Array di log
      */
     public function get_logs($limit = 100) {
-        $logs = get_option(self::LOG_OPTION_KEY, array());
+        global $wpdb;
         
-        if ($limit > 0 && count($logs) > $limit) {
-            return array_slice($logs, 0, $limit);
+        $table = WPLF_Database::get_logs_table();
+        
+        $sql = "SELECT * FROM {$table} ORDER BY timestamp DESC";
+        
+        if ($limit > 0) {
+            $sql .= $wpdb->prepare(" LIMIT %d", $limit);
         }
         
-        return $logs;
+        return $wpdb->get_results($sql, ARRAY_A);
     }
     
     /**
@@ -95,17 +85,20 @@ class WPLF_Logger {
      * @return array Log filtrati
      */
     public function get_logs_by_ip($ip, $limit = 50) {
-        $logs = $this->get_logs(0);
+        global $wpdb;
         
-        $filtered = array_filter($logs, function($log) use ($ip) {
-            return $log['ip'] === $ip;
-        });
+        $table = WPLF_Database::get_logs_table();
         
-        if ($limit > 0 && count($filtered) > $limit) {
-            return array_slice($filtered, 0, $limit);
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE ip = %s ORDER BY timestamp DESC",
+            $ip
+        );
+        
+        if ($limit > 0) {
+            $sql .= $wpdb->prepare(" LIMIT %d", $limit);
         }
         
-        return array_values($filtered);
+        return $wpdb->get_results($sql, ARRAY_A);
     }
     
     /**
@@ -116,17 +109,20 @@ class WPLF_Logger {
      * @return array Log filtrati
      */
     public function get_logs_by_username($username, $limit = 50) {
-        $logs = $this->get_logs(0);
+        global $wpdb;
         
-        $filtered = array_filter($logs, function($log) use ($username) {
-            return $log['username'] === $username;
-        });
+        $table = WPLF_Database::get_logs_table();
         
-        if ($limit > 0 && count($filtered) > $limit) {
-            return array_slice($filtered, 0, $limit);
+        $sql = $wpdb->prepare(
+            "SELECT * FROM {$table} WHERE username = %s ORDER BY timestamp DESC",
+            $username
+        );
+        
+        if ($limit > 0) {
+            $sql .= $wpdb->prepare(" LIMIT %d", $limit);
         }
         
-        return array_values($filtered);
+        return $wpdb->get_results($sql, ARRAY_A);
     }
     
     /**
@@ -135,58 +131,59 @@ class WPLF_Logger {
      * @return array Statistiche aggregate
      */
     public function get_statistics() {
-        $logs = $this->get_logs(0);
+        global $wpdb;
+        
+        $table = WPLF_Database::get_logs_table();
+        
+        // Conteggi per status
+        $status_counts = $wpdb->get_results(
+            "SELECT status, COUNT(*) as count FROM {$table} GROUP BY status",
+            ARRAY_A
+        );
         
         $stats = array(
-            'total_attempts' => count($logs),
+            'total_attempts' => 0,
             'successful' => 0,
             'failed' => 0,
             'blocked' => 0,
             'rate_limited' => 0,
-            'unique_ips' => array(),
-            'unique_usernames' => array(),
+            'unique_ips' => 0,
+            'unique_usernames' => 0,
             'last_24h' => 0,
             'last_7d' => 0
         );
         
-        $yesterday = strtotime('-24 hours');
-        $week_ago = strtotime('-7 days');
-        
-        foreach ($logs as $log) {
-            // Conta per status
-            if (isset($log['status'])) {
-                $key = $log['status'];
-                if (isset($stats[$key])) {
-                    $stats[$key]++;
-                }
-            }
-            
-            // IP unici
-            if (isset($log['ip'])) {
-                $stats['unique_ips'][$log['ip']] = true;
-            }
-            
-            // Username unici
-            if (isset($log['username'])) {
-                $stats['unique_usernames'][$log['username']] = true;
-            }
-            
-            // Conta per periodo
-            if (isset($log['timestamp'])) {
-                $timestamp = strtotime($log['timestamp']);
-                
-                if ($timestamp > $yesterday) {
-                    $stats['last_24h']++;
-                }
-                
-                if ($timestamp > $week_ago) {
-                    $stats['last_7d']++;
-                }
+        // Popola conteggi status
+        foreach ($status_counts as $row) {
+            $status = $row['status'];
+            $count = (int)$row['count'];
+            $stats['total_attempts'] += $count;
+            if (isset($stats[$status])) {
+                $stats[$status] = $count;
             }
         }
         
-        $stats['unique_ips'] = count($stats['unique_ips']);
-        $stats['unique_usernames'] = count($stats['unique_usernames']);
+        // IP unici
+        $unique_ips = $wpdb->get_var("SELECT COUNT(DISTINCT ip) FROM {$table}");
+        $stats['unique_ips'] = (int)$unique_ips;
+        
+        // Username unici
+        $unique_usernames = $wpdb->get_var("SELECT COUNT(DISTINCT username) FROM {$table}");
+        $stats['unique_usernames'] = (int)$unique_usernames;
+        
+        // Ultimi 24h
+        $last_24h = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE timestamp > %s",
+            date('Y-m-d H:i:s', strtotime('-24 hours'))
+        ));
+        $stats['last_24h'] = (int)$last_24h;
+        
+        // Ultimi 7 giorni
+        $last_7d = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE timestamp > %s",
+            date('Y-m-d H:i:s', strtotime('-7 days'))
+        ));
+        $stats['last_7d'] = (int)$last_7d;
         
         return $stats;
     }
@@ -195,7 +192,11 @@ class WPLF_Logger {
      * Cancella tutti i log
      */
     public function clear_logs() {
-        return delete_option(self::LOG_OPTION_KEY);
+        global $wpdb;
+        
+        $table = WPLF_Database::get_logs_table();
+        
+        return $wpdb->query("TRUNCATE TABLE {$table}");
     }
     
     /**
@@ -204,21 +205,16 @@ class WPLF_Logger {
      * @param int $days Numero di giorni
      */
     public function clear_old_logs($days = 30) {
-        $logs = $this->get_logs(0);
-        $cutoff = strtotime("-{$days} days");
+        global $wpdb;
         
-        $filtered = array_filter($logs, function($log) use ($cutoff) {
-            if (!isset($log['timestamp'])) {
-                return true;
-            }
-            
-            $timestamp = strtotime($log['timestamp']);
-            return $timestamp > $cutoff;
-        });
+        $table = WPLF_Database::get_logs_table();
         
-        update_option(self::LOG_OPTION_KEY, array_values($filtered), false);
+        $cutoff = date('Y-m-d H:i:s', strtotime("-{$days} days"));
         
-        return count($logs) - count($filtered);
+        return $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$table} WHERE timestamp < %s",
+            $cutoff
+        ));
     }
     
     /**

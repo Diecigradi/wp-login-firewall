@@ -3457,3 +3457,190 @@ L'interfaccia è ora **minimale, pulita e focalizzata sui dati**! 🎯
 
 ---
 
+_**User (2025-11-30 07:38Z)**_
+
+Nel DB dove vengono salvati i tentativi di login e gli IP
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+I dati vengono salvati nel database WordPress in questo modo:
+
+## 📍 Posizione nel Database
+
+**Tabella:** `wp_options` (o `{prefix}_options` se hai un prefixo personalizzato)
+
+### 1️⃣ **Log dei tentativi** 
+- **Option name:** `wplf_access_logs`
+- **Formato:** Array serializzato con max 1000 entries
+- **Contiene:** 
+  - `timestamp` - Data/ora tentativo
+  - `ip` - Indirizzo IP
+  - `username` - Username tentato
+  - `status` - success/failed/blocked/rate_limited
+  - `message` - Messaggio descrittivo
+  - `user_agent` - Browser/client info
+
+### 2️⃣ **IP Bloccati**
+- **Option name:** `wplf_blocked_ips`
+- **Formato:** Array associativo (IP come chiave)
+- **Contiene:**
+  - `blocked_at` - Data/ora blocco
+  - `expires` - Timestamp scadenza (24h)
+  - `reason` - Motivo blocco
+  - `attempts` - Numero blocchi ricevuti
+
+### 3️⃣ **Rate Limiting**
+- **Option name:** `_transient_wplf_rate_{MD5_IP}`
+- **Tipo:** Transient (temporaneo, si autodistrugge dopo 15 minuti)
+- **Valore:** Numero di tentativi
+
+### 4️⃣ **Token di verifica**
+- **Option name:** `_transient_wplf_token_{TOKEN}`
+- **Tipo:** Transient (temporaneo, scadenza 5 minuti)
+- **Contiene:**
+  - `user_id`
+  - `username`
+  - `timestamp`
+
+## 🔍 Come visualizzarli
+
+**Via phpMyAdmin:**
+```sql
+SELECT * FROM wp_options WHERE option_name LIKE 'wplf%';
+```
+
+**Via plugin in WordPress:**
+Dashboard → **Login Firewall** → Log Accessi / IP Bloccati
+
+---
+
+_**User (2025-11-30 07:39Z)**_
+
+Possiamo creare una tabella dedicata. Prima di procedere fammi sapere che cosa comporta e come vorresti agire
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 📊 Creare Tabelle Dedicate - Analisi
+
+### ✅ **Vantaggi:**
+
+1. **Performance migliorate**
+   - Query più veloci (indici dedicati)
+   - Niente serializzazione/deserializzazione di array
+   - Ricerche e filtri molto più efficienti
+
+2. **Scalabilità**
+   - Nessun limite di 1000 log
+   - Crescita illimitata senza problemi
+   - Possibilità di archiviazione storica
+
+3. **Query avanzate**
+   - Statistiche complesse più veloci
+   - JOIN con altre tabelle WordPress
+   - Aggregazioni (GROUP BY, COUNT, AVG)
+
+4. **Pulizia database**
+   - `wp_options` meno appesantita
+   - Backup più gestibili
+   - Possibilità di TRUNCATE per svuotare
+
+### ⚠️ **Svantaggi:**
+
+1. **Compatibilità**
+   - Richiede creazione tabelle all'attivazione plugin
+   - Necessaria pulizia alla disattivazione
+   - Più complesso per utenti non tecnici
+
+2. **Portabilità**
+   - Backup plugin richiede export/import tabelle
+   - Migrazione sito più articolata
+
+3. **Sviluppo**
+   - Codice più complesso (query SQL dirette)
+   - Gestione aggiornamenti schema database
+
+---
+
+## 🎯 **Come Vorrei Agire:**
+
+### **Tabella 1: `wp_wplf_logs`**
+```sql
+CREATE TABLE wp_wplf_logs (
+  id BIGINT(20) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  timestamp DATETIME NOT NULL,
+  ip VARCHAR(45) NOT NULL,
+  username VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  message TEXT,
+  user_agent TEXT,
+  INDEX idx_timestamp (timestamp),
+  INDEX idx_ip (ip),
+  INDEX idx_status (status)
+)
+```
+
+### **Tabella 2: `wp_wplf_blocked_ips`**
+```sql
+CREATE TABLE wp_wplf_blocked_ips (
+  id BIGINT(20) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  ip VARCHAR(45) UNIQUE NOT NULL,
+  blocked_at DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL,
+  reason VARCHAR(255),
+  attempts INT(11) DEFAULT 1,
+  INDEX idx_ip (ip),
+  INDEX idx_expires (expires_at)
+)
+```
+
+### **Rate Limiting:** 
+Resterei con **transient** (vanno bene per dati temporanei di 15 minuti)
+
+---
+
+## 📝 **Piano di Implementazione:**
+
+1. **Creare file** `includes/class-wplf-database.php` con metodi per:
+   - Installazione tabelle
+   - Query CRUD ottimizzate
+   - Migrazione dati esistenti da `wp_options`
+
+2. **Hook attivazione plugin:**
+   - Crea tabelle se non esistono
+   - Migra log esistenti (se presenti)
+
+3. **Modificare classi esistenti:**
+   - `WPLF_Logger` → usa query SQL invece di get/update_option
+   - `WPLF_IP_Blocker` → usa tabella dedicata
+   - Mantenere API identica (no breaking changes)
+
+4. **Hook disattivazione:**
+   - Opzionale: cancellare tabelle (con conferma admin)
+
+---
+
+## ❓ **La Domanda:**
+
+**Vuoi che proceda con questa implementazione?** 
+
+Pro: Plugin molto più performante e scalabile  
+Contro: Complessità maggiore e migrazione necessaria per chi già usa v3.0
+
+---
+
+_**User (2025-11-30 07:41Z)**_
+
+Ok procedi
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+
+---
+

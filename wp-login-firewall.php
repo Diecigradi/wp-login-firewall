@@ -3,7 +3,7 @@
  * Plugin Name: WP Login Firewall
  * Plugin URI: https://github.com/Diecigradi/wp-login-firewall
  * Description: Sistema di verifica a due step per il login di WordPress con protezione avanzata contro attacchi brute force
- * Version: 3.0.0
+ * Version: 3.1.0
  * Author: DevRoom by RoomZero Creative Solutions
  * Author URI: https://roomzerostaging.it
  * License: GPL v2 or later
@@ -19,9 +19,12 @@ if (!defined('ABSPATH')) {
 }
 
 // Definisce costanti del plugin
-define('WPLF_VERSION', '3.0.0');
+define('WPLF_VERSION', '3.1.0');
 define('WPLF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+// Carica la classe database
+require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-database.php';
 
 // Carica la classe principale
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-core.php';
@@ -42,9 +45,24 @@ function wplf_init() {
 add_action('plugins_loaded', 'wplf_init');
 
 // Activation hook
-register_activation_hook(__FILE__, function() {
-    // Nulla da fare per ora
-});
+register_activation_hook(__FILE__, 'wplf_activate');
+
+function wplf_activate() {
+    // Crea le tabelle nel database
+    WPLF_Database::create_tables();
+    
+    // Verifica se ci sono dati da migrare da wp_options
+    $old_logs = get_option('wplf_access_logs', array());
+    $old_blocks = get_option('wplf_blocked_ips', array());
+    
+    if (!empty($old_logs) || !empty($old_blocks)) {
+        // Migra i dati esistenti alle tabelle
+        WPLF_Database::migrate_existing_data();
+    }
+    
+    // Salva la versione del database
+    update_option('wplf_db_version', WPLF_Database::DB_VERSION);
+}
 
 // Deactivation hook
 register_deactivation_hook(__FILE__, function() {

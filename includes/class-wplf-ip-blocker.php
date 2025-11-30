@@ -13,11 +13,6 @@ if (!defined('ABSPATH')) {
 class WPLF_IP_Blocker {
     
     /**
-     * Chiave option per IP bloccati
-     */
-    const BLOCKED_IPS_KEY = 'wplf_blocked_ips';
-    
-    /**
      * Durata blocco in secondi (24 ore)
      */
     const BLOCK_DURATION = 86400; // 24 * 60 * 60
@@ -51,25 +46,20 @@ class WPLF_IP_Blocker {
      * @return bool True se bloccato
      */
     public function is_blocked($ip = null) {
+        global $wpdb;
+        
         if ($ip === null) {
             $ip = $this->get_client_ip();
         }
         
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        if (!isset($blocked_ips[$ip])) {
-            return false;
-        }
+        $block = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE ip = %s AND expires_at > NOW()",
+            $ip
+        ), ARRAY_A);
         
-        $block_data = $blocked_ips[$ip];
-        
-        // Verifica se il blocco è scaduto
-        if (time() > $block_data['expires']) {
-            $this->unblock_ip($ip);
-            return false;
-        }
-        
-        return true;
+        return !empty($block);
     }
     
     /**
@@ -81,20 +71,52 @@ class WPLF_IP_Blocker {
      * @return bool True se bloccato con successo
      */
     public function block_ip($ip, $reason = 'Troppi tentativi falliti', $duration = null) {
+        global $wpdb;
+        
         if ($duration === null) {
             $duration = self::BLOCK_DURATION;
         }
         
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        $blocked_ips[$ip] = array(
-            'blocked_at' => current_time('mysql'),
-            'expires' => time() + $duration,
-            'reason' => sanitize_text_field($reason),
-            'attempts' => isset($blocked_ips[$ip]) ? $blocked_ips[$ip]['attempts'] + 1 : 1
-        );
+        // Verifica se già bloccato
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE ip = %s",
+            $ip
+        ), ARRAY_A);
         
-        return update_option(self::BLOCKED_IPS_KEY, $blocked_ips, false);
+        $blocked_at = current_time('mysql');
+        $expires_at = date('Y-m-d H:i:s', time() + $duration);
+        $attempts = $existing ? (int)$existing['attempts'] + 1 : 1;
+        
+        if ($existing) {
+            // Aggiorna blocco esistente
+            return $wpdb->update(
+                $table,
+                array(
+                    'blocked_at' => $blocked_at,
+                    'expires_at' => $expires_at,
+                    'reason' => sanitize_text_field($reason),
+                    'attempts' => $attempts
+                ),
+                array('ip' => $ip),
+                array('%s', '%s', '%s', '%d'),
+                array('%s')
+            );
+        } else {
+            // Nuovo blocco
+            return $wpdb->insert(
+                $table,
+                array(
+                    'ip' => $ip,
+                    'blocked_at' => $blocked_at,
+                    'expires_at' => $expires_at,
+                    'reason' => sanitize_text_field($reason),
+                    'attempts' => $attempts
+                ),
+                array('%s', '%s', '%s', '%s', '%d')
+            );
+        }
     }
     
     /**
@@ -104,14 +126,15 @@ class WPLF_IP_Blocker {
      * @return bool True se sbloccato con successo
      */
     public function unblock_ip($ip) {
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
+        global $wpdb;
         
-        if (isset($blocked_ips[$ip])) {
-            unset($blocked_ips[$ip]);
-            return update_option(self::BLOCKED_IPS_KEY, $blocked_ips, false);
-        }
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        return false;
+        return $wpdb->delete(
+            $table,
+            array('ip' => $ip),
+            array('%s')
+        );
     }
     
     /**
@@ -121,17 +144,20 @@ class WPLF_IP_Blocker {
      * @return array|false Dati del blocco o false
      */
     public function get_block_info($ip = null) {
+        global $wpdb;
+        
         if ($ip === null) {
             $ip = $this->get_client_ip();
         }
         
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        if (!isset($blocked_ips[$ip])) {
-            return false;
-        }
+        $block = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE ip = %s",
+            $ip
+        ), ARRAY_A);
         
-        return $blocked_ips[$ip];
+        return $block ? $block : false;
     }
     
     /**
@@ -147,7 +173,8 @@ class WPLF_IP_Blocker {
             return 0;
         }
         
-        $remaining = $block_info['expires'] - time();
+        $expires = strtotime($block_info['expires_at']);
+        $remaining = $expires - time();
         
         return max(0, $remaining);
     }
@@ -180,20 +207,17 @@ class WPLF_IP_Blocker {
      * @return array Array di IP bloccati
      */
     public function get_all_blocked_ips() {
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
+        global $wpdb;
         
-        // Rimuovi blocchi scaduti
-        $current_time = time();
-        foreach ($blocked_ips as $ip => $data) {
-            if ($current_time > $data['expires']) {
-                unset($blocked_ips[$ip]);
-            }
-        }
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        // Aggiorna se ci sono stati cambiamenti
-        update_option(self::BLOCKED_IPS_KEY, $blocked_ips, false);
+        // Ottieni solo blocchi attivi
+        $blocks = $wpdb->get_results(
+            "SELECT * FROM {$table} WHERE expires_at > NOW() ORDER BY blocked_at DESC",
+            ARRAY_A
+        );
         
-        return $blocked_ips;
+        return $blocks;
     }
     
     /**
@@ -204,20 +228,21 @@ class WPLF_IP_Blocker {
      * @return bool True se l'IP è stato bloccato
      */
     public function check_and_block($ip, $logger) {
+        global $wpdb;
+        
         // Conta tentativi falliti recenti (ultima ora)
-        $logs = $logger->get_logs_by_ip($ip, 0);
+        $table = WPLF_Database::get_logs_table();
         
-        $failed_count = 0;
-        $one_hour_ago = strtotime('-1 hour');
+        $one_hour_ago = date('Y-m-d H:i:s', strtotime('-1 hour'));
         
-        foreach ($logs as $log) {
-            if (isset($log['status']) && in_array($log['status'], array('failed', 'rate_limited'))) {
-                $timestamp = strtotime($log['timestamp']);
-                if ($timestamp > $one_hour_ago) {
-                    $failed_count++;
-                }
-            }
-        }
+        $failed_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} 
+            WHERE ip = %s 
+            AND status = 'failed' 
+            AND timestamp > %s",
+            $ip,
+            $one_hour_ago
+        ));
         
         // Blocca se supera la soglia
         if ($failed_count >= self::FAILED_ATTEMPTS_THRESHOLD) {
@@ -234,7 +259,11 @@ class WPLF_IP_Blocker {
      * @return bool True se cancellati con successo
      */
     public function clear_all_blocks() {
-        return delete_option(self::BLOCKED_IPS_KEY);
+        global $wpdb;
+        
+        $table = WPLF_Database::get_blocked_ips_table();
+        
+        return $wpdb->query("TRUNCATE TABLE {$table}");
     }
     
     /**
@@ -243,18 +272,12 @@ class WPLF_IP_Blocker {
      * @return int Numero di blocchi rimossi
      */
     public function cleanup_expired_blocks() {
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, array());
-        $initial_count = count($blocked_ips);
+        global $wpdb;
         
-        $current_time = time();
-        foreach ($blocked_ips as $ip => $data) {
-            if ($current_time > $data['expires']) {
-                unset($blocked_ips[$ip]);
-            }
-        }
+        $table = WPLF_Database::get_blocked_ips_table();
         
-        update_option(self::BLOCKED_IPS_KEY, $blocked_ips, false);
-        
-        return $initial_count - count($blocked_ips);
+        return $wpdb->query(
+            "DELETE FROM {$table} WHERE expires_at < NOW()"
+        );
     }
 }
