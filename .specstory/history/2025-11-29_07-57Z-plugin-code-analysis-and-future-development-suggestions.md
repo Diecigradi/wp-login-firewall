@@ -4029,3 +4029,17 @@ Commit `2d85f30` pushato su GitHub. La console JavaScript ora è pulita senza er
 
 ---
 
+_**User (2025-11-30 08:25Z)**_
+
+Ok ora se i tentativi sono stati superati e poi inserisco il mio utente admin non mi risconosce dovrebbe essere in whitlist e farmi passare
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Verifico il problema. Quando superi il rate limit e poi inserisci un username admin, dovrebbe resettare il rate limit e farti passare grazie alla whitelist. Controlliamo la logica: Vedo il problema! Il controllo del rate limiting avviene PRIMA di verificare se l'utente esiste e se è admin. Quindi anche se inserisci un username admin, se hai già superato il rate limit, ricevi l'errore "Troppi tentativi" prima che il sistema possa verificare che sei un admin.
+
+La whitelist admin dovrebbe essere verificata PRIMA del rate limiting. Ecco la 
+
+---
+

@@ -177,11 +177,31 @@ class WPLF_Core {
             // Log successo admin
             $this->logger->log_attempt($username, 'success', 'Admin verificato (whitelist automatica)');
             
-            // Genera token e permetti login
-            $token = $this->generate_token($username);
+            // Genera token sicuro
+            $token = wp_generate_password(32, false);
+            
+            // Salva il token come transient (5 minuti)
+            set_transient('wplf_token_' . $token, array(
+                'user_id' => $user->ID,
+                'username' => $username,
+                'timestamp' => current_time('timestamp')
+            ), 5 * MINUTE_IN_SECONDS);
+            
+            // Costruisci URL di redirect con token
+            $redirect_url = wp_login_url();
+            $redirect_url = add_query_arg('wplf_token', $token, $redirect_url);
+            
+            // Preserva parametri originali
+            if (!empty($_POST['redirect_to'])) {
+                $redirect_url = add_query_arg('redirect_to', urlencode($_POST['redirect_to']), $redirect_url);
+            }
+            if (!empty($_POST['reauth'])) {
+                $redirect_url = add_query_arg('reauth', $_POST['reauth'], $redirect_url);
+            }
+            
             wp_send_json_success(array(
-                'token' => $token,
-                'message' => 'Verifica completata! Accesso in corso...'
+                'message' => 'Verifica completata! Accesso admin in corso...',
+                'redirect' => $redirect_url
             ));
         }
         
