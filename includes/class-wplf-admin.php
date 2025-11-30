@@ -564,20 +564,6 @@ class WPLF_Admin {
                     </table>
                 </div>
                 
-                <div class="wplf-help-card">
-                    <h2>Personalizzazione</h2>
-                    <p>Puoi personalizzare l'aspetto della pagina di verifica modificando le CSS variables in:</p>
-                    <p><code>assets/css/style.css</code></p>
-                    <p>Variabili disponibili:</p>
-                    <ul>
-                        <li><code>--wplf-primary</code> - Colore primario</li>
-                        <li><code>--wplf-secondary</code> - Colore secondario</li>
-                        <li><code>--wplf-background</code> - Sfondo</li>
-                        <li><code>--wplf-text-primary</code> - Colore testo principale</li>
-                        <li>...e oltre 40 variabili configurabili</li>
-                    </ul>
-                </div>
-                
                 <div class="wplf-help-card wplf-warning-card">
                     <h2>Note Importanti</h2>
                     <ul>

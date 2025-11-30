@@ -3397,3 +3397,63 @@ if (!$user) {
 
 ---
 
+_**User (2025-11-30 07:19Z)**_
+
+Ok perfetto. Ora vorrei che il backend che l'interfaccia grafica del backend fosse più minimale. Rimuovi le icone e mantieni solo i dati puliti anche nella pagina come funziona. Mantinei solamente le leggende colorate dello status dei log ma rimuovi tutte le icone
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+Ora aggiorno il CSS per il design più minimale: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+✅ **Design minimale applicato e pushato!**
+
+**Cosa ho rimosso:**
+- ❌ Tutte le icone dashicons dai titoli (shield, list-view, lock, info, ecc.)
+- ❌ Icone circolari dalle card statistiche
+- ❌ Emoji dai titoli nella pagina "Come Funziona" (🎯🔐🛡️⚙️📊, ecc.)
+- ❌ Icone dai pulsanti (download, trash)
+- ❌ Icone grandi da empty state
+
+**Cosa ho mantenuto:**
+- ✅ **Badge colorati** per gli status dei log (success, failed, warning, blocked)
+- ✅ **Bordi colorati** nelle card statistiche (verde per successo, rosso per errori, arancione per warning)
+
+**Miglioramenti CSS:**
+- Design più pulito e professionale
+- Card con hover sottile (no più shadow/transform)
+- Border-radius ridotti (8px → 4px)
+- Padding ridotti per maggiore densità informativa
+- Colori più neutri e standard WordPress
+
+L'interfaccia è ora **minimale, pulita e focalizzata sui dati**! 🎯
+
+---
+

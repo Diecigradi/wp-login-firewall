@@ -83,7 +83,6 @@ class WPLF_Core {
             <div class="wplf-container">
                 <div class="wplf-card">
                     <div class="wplf-header">
-                        <div class="wplf-icon">🛡️</div>
                         <h1 class="wplf-title">Verifica Accesso</h1>
                         <p class="wplf-subtitle">Inserisci il tuo username o email per continuare</p>
                     </div>
