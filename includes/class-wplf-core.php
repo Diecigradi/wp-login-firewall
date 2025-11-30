@@ -176,11 +176,27 @@ class WPLF_Core {
             wp_send_json_error('Credenziali non valide');
         }
         
-        // Successo - resetta rate limit
-        $this->rate_limiter->reset_rate_limit();
+        // Verifica se l'utente è admin - whitelist automatica
+        if (user_can($user, 'manage_options')) {
+            // Admin: resetta rate limit e non bloccare mai
+            $this->rate_limiter->reset_rate_limit();
+            
+            // Se era bloccato, sbloccalo
+            $client_ip = $this->get_client_ip();
+            if ($this->ip_blocker->is_blocked($client_ip)) {
+                $this->ip_blocker->unblock_ip($client_ip);
+            }
+            
+            // Log successo admin
+            $this->logger->log_attempt($username, 'success', 'Admin verificato (whitelist automatica)');
+        } else {
+            // Utente normale: resetta rate limit
+            $this->rate_limiter->reset_rate_limit();
+            
+            // Log successo
+            $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
+        }
         
-        // Log successo
-        $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
         
         // Genera token sicuro
         $token = wp_generate_password(32, false);
