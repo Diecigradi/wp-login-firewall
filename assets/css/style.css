@@ -4,8 +4,8 @@
 
 :root {
     /* Colors */
-    --wplf-primary: #ff9d00;
-    --wplf-secondary: #da4c00;
+    --wplf-primary: #b5b5b5;
+    --wplf-secondary: #484848;
     --wplf-background: #f7fafc;
     --wplf-surface: #ffffff;
     --wplf-text-primary: #2d3748;
@@ -88,7 +88,7 @@ body.wplf-page {
 }
 
 .wplf-subtitle {
-    margin: 0;
+    margin: 0 0 var(--wplf-spacing-xs);
     color: var(--wplf-text-secondary);
     font-size: var(--wplf-font-size-sm);
 }

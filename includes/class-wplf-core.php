@@ -84,7 +84,8 @@ class WPLF_Core {
                 <div class="wplf-card">
                     <div class="wplf-header">
                         <h1 class="wplf-title">VERIFICA ACCESSO</h1>
-                        <p class="wplf-subtitle">L'accesso a questo sito è protetto.<br>Per accedere all'area di amministrazione è necessario verificare la tua identità.<br>Inserisci il tuo username o email per procedere.</p>
+                        <h2 class="wplf-subtitle">Login a due fattori - <strong><?php echo get_bloginfo('name'); ?></strong></h2>
+                        <p class="wplf-subtitle">L'accesso a questo sito è protetto.<br>Per accedere all'area di amministrazione è necessario verificare la tua identità.<br>Inserisci il tuo <strong>username o email</strong> per procedere.</p>
                     </div>
                     
                     <div id="wplf-message" class="wplf-message"></div>
