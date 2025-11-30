@@ -13,16 +13,6 @@ if (!defined('ABSPATH')) {
 class WPLF_Rate_Limiter {
     
     /**
-     * Max tentativi permessi
-     */
-    const MAX_ATTEMPTS = 5;
-    
-    /**
-     * Finestra temporale in secondi (15 minuti)
-     */
-    const TIME_WINDOW = 900; // 15 * 60
-    
-    /**
      * Ottiene l'IP del client
      */
     private function get_client_ip() {
@@ -54,7 +44,9 @@ class WPLF_Rate_Limiter {
             return false;
         }
         
-        return $attempts >= self::MAX_ATTEMPTS;
+        $max_attempts = get_option('wplf_rate_limit_attempts', 5);
+        
+        return $attempts >= $max_attempts;
     }
     
     /**
@@ -65,11 +57,12 @@ class WPLF_Rate_Limiter {
         $transient_key = 'wplf_rate_' . md5($ip);
         
         $attempts = get_transient($transient_key);
+        $time_window = get_option('wplf_rate_limit_minutes', 15) * 60;
         
         if ($attempts === false) {
-            set_transient($transient_key, 1, self::TIME_WINDOW);
+            set_transient($transient_key, 1, $time_window);
         } else {
-            set_transient($transient_key, $attempts + 1, self::TIME_WINDOW);
+            set_transient($transient_key, $attempts + 1, $time_window);
         }
     }
     
@@ -83,12 +76,13 @@ class WPLF_Rate_Limiter {
         $transient_key = 'wplf_rate_' . md5($ip);
         
         $attempts = get_transient($transient_key);
+        $max_attempts = get_option('wplf_rate_limit_attempts', 5);
         
         if ($attempts === false) {
-            return self::MAX_ATTEMPTS;
+            return $max_attempts;
         }
         
-        return max(0, self::MAX_ATTEMPTS - $attempts);
+        return max(0, $max_attempts - $attempts);
     }
     
     /**

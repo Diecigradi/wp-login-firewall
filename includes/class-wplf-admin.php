@@ -27,6 +27,7 @@ class WPLF_Admin {
         add_action('wp_ajax_wplf_unblock_ip', array($this, 'ajax_unblock_ip'));
         add_action('wp_ajax_wplf_clear_logs', array($this, 'ajax_clear_logs'));
         add_action('wp_ajax_wplf_export_logs', array($this, 'ajax_export_logs'));
+        add_action('wp_ajax_wplf_save_settings', array($this, 'ajax_save_settings'));
     }
     
     /**
@@ -76,7 +77,16 @@ class WPLF_Admin {
             'Come Funziona',
             'manage_options',
             'wplf-help',
-            array($this, 'render_help_page')
+            array($this, 'render_help')
+        );
+        
+        add_submenu_page(
+            'wp-login-firewall',
+            'Impostazioni',
+            'Impostazioni',
+            'manage_options',
+            'wplf-settings',
+            array($this, 'render_settings')
         );
     }
     
@@ -571,7 +581,7 @@ class WPLF_Admin {
                         <li><strong>Admin Lockout:</strong> Gli amministratori sono automaticamente esclusi dal blocco IP</li>
                         <li><strong>Cache:</strong> Se usi un plugin di cache, svuotalo dopo l'installazione</li>
                         <li><strong>CDN:</strong> Assicurati che il CDN passi correttamente l'IP reale del visitatore</li>
-                        <li><strong>Performance:</strong> I log sono limitati a 1000 entries per non appesantire il database</li>
+                        <li><strong>Impostazioni:</strong> Personalizza i parametri di sicurezza dalla pagina Impostazioni</li>
                     </ul>
                 </div>
                 
@@ -584,5 +594,221 @@ class WPLF_Admin {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * Renderizza la pagina impostazioni
+     */
+    public function render_settings() {
+        // Carica impostazioni correnti
+        $settings = $this->get_settings();
+        
+        ?>
+        <div class="wrap wplf-admin">
+            <h1>Impostazioni WP Login Firewall</h1>
+            
+            <form id="wplf-settings-form">
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row">
+                                <label>Rate Limiting</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="number" name="rate_limit_attempts" 
+                                               value="<?php echo esc_attr($settings['rate_limit_attempts']); ?>" 
+                                               min="1" max="20" style="width: 80px;">
+                                        tentativi ogni
+                                    </label>
+                                    <label>
+                                        <input type="number" name="rate_limit_minutes" 
+                                               value="<?php echo esc_attr($settings['rate_limit_minutes']); ?>" 
+                                               min="1" max="60" style="width: 80px;">
+                                        minuti
+                                    </label>
+                                    <p class="description">
+                                        Numero massimo di tentativi di verifica username consentiti per IP nel periodo specificato.
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Blocco IP Automatico</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        Blocca IP dopo
+                                        <input type="number" name="ip_block_threshold" 
+                                               value="<?php echo esc_attr($settings['ip_block_threshold']); ?>" 
+                                               min="3" max="50" style="width: 80px;">
+                                        tentativi falliti
+                                    </label>
+                                    <p class="description">
+                                        Gli IP vengono bloccati automaticamente dopo questo numero di tentativi falliti nell'ultima ora.
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Durata Blocco IP</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="number" name="ip_block_duration" 
+                                               value="<?php echo esc_attr($settings['ip_block_duration']); ?>" 
+                                               min="1" max="168" style="width: 80px;">
+                                        ore
+                                    </label>
+                                    <p class="description">
+                                        Durata del blocco IP dopo il superamento della soglia (max 168 ore = 7 giorni).
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Retention Log</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        Mantieni log per
+                                        <input type="number" name="log_retention_days" 
+                                               value="<?php echo esc_attr($settings['log_retention_days']); ?>" 
+                                               min="7" max="365" style="width: 80px;">
+                                        giorni
+                                    </label>
+                                    <p class="description">
+                                        I log più vecchi verranno automaticamente eliminati dopo questo periodo.
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <p class="submit">
+                    <button type="submit" class="button button-primary">Salva Modifiche</button>
+                    <button type="button" id="wplf-reset-settings" class="button">Ripristina Predefiniti</button>
+                </p>
+            </form>
+            
+            <div id="wplf-settings-message" style="display: none; margin-top: 20px;"></div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#wplf-settings-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var $form = $(this);
+                var $btn = $form.find('button[type="submit"]');
+                var $msg = $('#wplf-settings-message');
+                
+                $btn.prop('disabled', true).text('Salvataggio...');
+                
+                $.post(ajaxurl, {
+                    action: 'wplf_save_settings',
+                    nonce: '<?php echo wp_create_nonce('wplf_save_settings'); ?>',
+                    settings: $form.serialize()
+                }, function(response) {
+                    $btn.prop('disabled', false).text('Salva Modifiche');
+                    
+                    if (response.success) {
+                        $msg.removeClass('notice-error').addClass('notice notice-success')
+                            .html('<p>Impostazioni salvate con successo!</p>').show();
+                    } else {
+                        $msg.removeClass('notice-success').addClass('notice notice-error')
+                            .html('<p>Errore: ' + (response.data || 'Impossibile salvare le impostazioni') + '</p>').show();
+                    }
+                    
+                    setTimeout(function() {
+                        $msg.fadeOut();
+                    }, 3000);
+                });
+            });
+            
+            $('#wplf-reset-settings').on('click', function() {
+                if (!confirm('Ripristinare le impostazioni predefinite?')) return;
+                
+                $('input[name="rate_limit_attempts"]').val(5);
+                $('input[name="rate_limit_minutes"]').val(15);
+                $('input[name="ip_block_threshold"]').val(10);
+                $('input[name="ip_block_duration"]').val(24);
+                $('input[name="log_retention_days"]').val(30);
+                
+                $('#wplf-settings-form').submit();
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Ottiene le impostazioni correnti
+     */
+    private function get_settings() {
+        return array(
+            'rate_limit_attempts' => get_option('wplf_rate_limit_attempts', 5),
+            'rate_limit_minutes' => get_option('wplf_rate_limit_minutes', 15),
+            'ip_block_threshold' => get_option('wplf_ip_block_threshold', 10),
+            'ip_block_duration' => get_option('wplf_ip_block_duration', 24),
+            'log_retention_days' => get_option('wplf_log_retention_days', 30)
+        );
+    }
+    
+    /**
+     * AJAX: Salva impostazioni
+     */
+    public function ajax_save_settings() {
+        check_ajax_referer('wplf_save_settings', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        parse_str($_POST['settings'], $settings);
+        
+        // Valida e salva ogni impostazione
+        $rate_limit_attempts = absint($settings['rate_limit_attempts']);
+        if ($rate_limit_attempts < 1 || $rate_limit_attempts > 20) {
+            wp_send_json_error('Tentativi rate limit deve essere tra 1 e 20');
+        }
+        update_option('wplf_rate_limit_attempts', $rate_limit_attempts);
+        
+        $rate_limit_minutes = absint($settings['rate_limit_minutes']);
+        if ($rate_limit_minutes < 1 || $rate_limit_minutes > 60) {
+            wp_send_json_error('Minuti rate limit deve essere tra 1 e 60');
+        }
+        update_option('wplf_rate_limit_minutes', $rate_limit_minutes);
+        
+        $ip_block_threshold = absint($settings['ip_block_threshold']);
+        if ($ip_block_threshold < 3 || $ip_block_threshold > 50) {
+            wp_send_json_error('Soglia blocco IP deve essere tra 3 e 50');
+        }
+        update_option('wplf_ip_block_threshold', $ip_block_threshold);
+        
+        $ip_block_duration = absint($settings['ip_block_duration']);
+        if ($ip_block_duration < 1 || $ip_block_duration > 168) {
+            wp_send_json_error('Durata blocco deve essere tra 1 e 168 ore');
+        }
+        update_option('wplf_ip_block_duration', $ip_block_duration);
+        
+        $log_retention_days = absint($settings['log_retention_days']);
+        if ($log_retention_days < 7 || $log_retention_days > 365) {
+            wp_send_json_error('Retention log deve essere tra 7 e 365 giorni');
+        }
+        update_option('wplf_log_retention_days', $log_retention_days);
+        
+        wp_send_json_success();
     }
 }

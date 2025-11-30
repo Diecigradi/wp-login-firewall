@@ -13,16 +13,6 @@ if (!defined('ABSPATH')) {
 class WPLF_IP_Blocker {
     
     /**
-     * Durata blocco in secondi (24 ore)
-     */
-    const BLOCK_DURATION = 86400; // 24 * 60 * 60
-    
-    /**
-     * Tentativi falliti prima del blocco
-     */
-    const FAILED_ATTEMPTS_THRESHOLD = 10;
-    
-    /**
      * Ottiene l'IP del client
      */
     private function get_client_ip() {
@@ -74,7 +64,7 @@ class WPLF_IP_Blocker {
         global $wpdb;
         
         if ($duration === null) {
-            $duration = self::BLOCK_DURATION;
+            $duration = get_option('wplf_ip_block_duration', 24) * 3600; // ore -> secondi
         }
         
         $table = WPLF_Database::get_blocked_ips_table();
@@ -244,8 +234,10 @@ class WPLF_IP_Blocker {
             $one_hour_ago
         ));
         
+        $threshold = get_option('wplf_ip_block_threshold', 10);
+        
         // Blocca se supera la soglia
-        if ($failed_count >= self::FAILED_ATTEMPTS_THRESHOLD) {
+        if ($failed_count >= $threshold) {
             $this->block_ip($ip, "Superati {$failed_count} tentativi falliti");
             return true;
         }

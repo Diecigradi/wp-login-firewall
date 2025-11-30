@@ -3632,7 +3632,7 @@ Contro: Complessità maggiore e migrazione necessaria per chi già usa v3.0
 
 ---
 
-_**User (2025-11-30 07:41Z)**_
+_**User (2025-11-30 07:46Z)**_
 
 Ok procedi
 
@@ -3640,6 +3640,132 @@ Ok procedi
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
+Ora aggiorno il Logger per usare la tabella: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+[object Object]
+
+---
+
+_**User (2025-11-30 07:49Z)**_
+
+@agent Continue: "Continue to iterate?"
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Admin panel methods that loop through blocked IPs treat them differently now - the SQL version returns arrays with numeric indexes, not associative array with IP as key. Need to update the rendering code. 
+```
+
+```
+The errors are mostly false positives from the PHP linter not understanding WordPress functions. The old `class-wp-login-firewall.php` file (from v2) is still in the repo but not being used - that's where most errors come from. Let's commit the database migration. Migrazione database completata! Il plugin è stato aggiornato alla versione 3.1.0 con le seguenti modifiche:
+
+**Modifiche Implementate:**
+
+1. **Classe WPLF_Database** - Nuovo file `class-wplf-database.php`:
+   - Gestisce creazione tabelle `wp_wplf_logs` e `wp_wplf_blocked_ips`
+   - Migrazione automatica dati da wp_options alle tabelle
+   - Metodi di cleanup per log vecchi e blocchi scaduti
+
+2. **WPLF_Logger Migrato**:
+   - `log_attempt()` usa `$wpdb->insert()` invece di `update_option()`
+   - `get_logs()` usa `SELECT` con `ORDER BY timestamp DESC LIMIT`
+   - `get_logs_by_ip()` e `get_logs_by_username()` con query `WHERE`
+   - `get_statistics()` usa aggregazioni SQL (`COUNT`, `GROUP BY`, `DISTINCT`)
+   - `clear_logs()` usa `TRUNCATE TABLE`
+   - Rimosso limite di 1000 log
+
+3. **WPLF_IP_Blocker Migrato**:
+   - `is_blocked()` query `WHERE expires_at > NOW()`
+   - `block_ip()` usa `INSERT` o `UPDATE` con gestione tentativi
+   - `unblock_ip()` usa `DELETE`
+   - `get_all_blocked_ips()` con auto-cleanup
+   - `check_and_block()` usa `COUNT` SQL per contare fallimenti
+
+4. **Activation Hook**:
+   - Crea tabelle all'attivazione
+   - Migra automaticamente dati esistenti da wp_options
+   - Salva versione database
+
+5. **Versione Aggiornata**: 3.0.0 → 3.1.0
+
+**Commit e Push**: Completato con successo su GitHub (commit `9052a43`)
+
+**Vantaggi della Migrazione**:
+- ✅ Storage illimitato per log (no più limite 1000)
+- ✅ Query indicizzate per performance migliorate
+- ✅ Statistiche SQL veloci con aggregazioni native
+- ✅ Migrazione automatica e trasparente per utenti esistenti
+- ✅ Manutenzione facilitata con cleanup dedicati
+
+---
+
+_**User (2025-11-30 07:56Z)**_
+
+OK. Ora ggiungiamo una pagina di amministrazione per permettere di modificare i parametrri come tentativi di login, tempo per riprovare al superamento dei tentativi di login, durata del blocco ip
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Aggiungo una pagina di impostazioni nel pannello admin per configurare tutti i parametri di sicurezza. 
+```
+
+```
+
+```
+
+```
 
 
 ---
