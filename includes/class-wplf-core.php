@@ -137,6 +137,13 @@ class WPLF_Core {
      * Handler AJAX per la verifica username
      */
     public function ajax_verify_username() {
+        // Verifica se l'IP è bloccato
+        if ($this->ip_blocker->is_blocked()) {
+            $this->logger->log_attempt('', 'blocked', 'Tentativo AJAX da IP bloccato');
+            $time_remaining = $this->ip_blocker->get_formatted_time_remaining();
+            wp_send_json_error('Il tuo IP è stato bloccato. Riprova tra ' . $time_remaining);
+        }
+        
         // Verifica nonce
         if (!isset($_POST['wplf_nonce']) || !wp_verify_nonce($_POST['wplf_nonce'], 'wplf_verify')) {
             $this->logger->log_attempt('', 'failed', 'Nonce non valido');
@@ -152,6 +159,11 @@ class WPLF_Core {
         // Verifica rate limiting
         if ($this->rate_limiter->is_rate_limited()) {
             $this->logger->log_attempt($username, 'rate_limited', 'Rate limit superato');
+            
+            // Verifica se bloccare IP anche per rate limiting
+            $client_ip = $this->get_client_ip();
+            $this->ip_blocker->check_and_block($client_ip, $this->logger);
+            
             $time_remaining = $this->rate_limiter->get_formatted_time_remaining();
             wp_send_json_error('Troppi tentativi. Riprova tra ' . $time_remaining);
         }

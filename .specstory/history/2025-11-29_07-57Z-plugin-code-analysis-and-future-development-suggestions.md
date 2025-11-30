@@ -3164,3 +3164,92 @@ Implemento questa protezione? 🛡️
 
 ---
 
+_**User (2025-11-30 00:09Z)**_
+
+ok
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+✅ **Protezione admin implementata!**
+
+Ora quando un amministratore inserisce il suo username:
+- ✅ **Non viene mai bloccato** (anche con tentativi multipli)
+- ✅ **Rate limit azzerato automaticamente**
+- ✅ **Sblocco automatico** se era già bloccato
+- ✅ **Log speciale** per tracciare accessi admin
+
+**Cosa cambia:**
+- **Admin**: Protezione completa dal lockout
+- **Altri utenti**: Tutte le protezioni restano attive
+
+**Come funziona:**
+1. Utente inserisce username
+2. Sistema verifica se esiste
+3. Se è admin (`manage_options`): whitelist automatica
+4. Se è utente normale: protezioni normali
+
+Ora sei sempre al sicuro! 🛡️
+
+---
+
+_**User (2025-11-30 00:12Z)**_
+
+Quando viene bloccato un ip?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Un IP viene bloccato quando:
+
+**Condizione:** 10 tentativi **falliti** nell'ultima ora
+
+**Cosa conta come "fallito":**
+- Username/email non trovato
+- Rate limit superato (tentativo rifiutato)
+
+**Processo:**
+1. Utente sbaglia username → tentativo fallito → log con status `'failed'` o `'rate_limited'`
+2. Dopo ogni tentativo fallito, il sistema controlla i log dell'ultimo ora
+3. Se ci sono ≥ 10 tentativi falliti → IP bloccato automaticamente per 24 ore
+
+**Codice in `class-wplf-ip-blocker.php`:**
+```php
+const FAILED_ATTEMPTS_THRESHOLD = 10;
+
+// Conta tentativi falliti recenti (ultima ora)
+$failed_count = 0;
+$one_hour_ago = strtotime('-1 hour');
+
+foreach ($logs as $log) {
+    if (in_array($log['status'], array('failed', 'rate_limited'))) {
+        if ($timestamp > $one_hour_ago) {
+            $failed_count++;
+        }
+    }
+}
+
+if ($failed_count >= 10) {
+    $this->block_ip($ip, "Superati {$failed_count} tentativi falliti");
+}
+```
+
+**Timeline esempio:**
+- Tentativo 1-5: Rate limiting (15 min)
+- Tentativo 6-10: Altri tentativi falliti
+- Tentativo 10: **IP BLOCCATO per 24 ore**
+
+Vuoi modificare la soglia o la durata del blocco? 🔧
+
+---
+
