@@ -28,6 +28,7 @@ class WPLF_Admin {
         add_action('wp_ajax_wplf_clear_logs', array($this, 'ajax_clear_logs'));
         add_action('wp_ajax_wplf_export_logs', array($this, 'ajax_export_logs'));
         add_action('wp_ajax_wplf_save_settings', array($this, 'ajax_save_settings'));
+        add_action('wp_ajax_wplf_block_ip', array($this, 'ajax_block_ip'));
     }
     
     /**
@@ -188,6 +189,7 @@ class WPLF_Admin {
      */
     public function render_logs() {
         $this->logger = new WPLF_Logger();
+        $this->ip_blocker = new WPLF_IP_Blocker();
         $logs = $this->logger->get_logs(100);
         
         ?>
@@ -225,6 +227,33 @@ class WPLF_Admin {
             
             $('#wplf-export-logs').on('click', function() {
                 window.location.href = ajaxurl + '?action=wplf_export_logs&nonce=<?php echo wp_create_nonce('wplf_export_logs'); ?>';
+            });
+            
+            // Handler per blocco manuale IP
+            $('.wplf-block-ip').on('click', function() {
+                var $btn = $(this);
+                var ip = $btn.data('ip');
+                var username = $btn.data('username');
+                
+                if (!confirm('Bloccare l\\'IP ' + ip + ' (username: ' + username + ') per ' + 
+                    '<?php echo get_option("wplf_ip_block_duration", 24); ?> ore?')) {
+                    return;
+                }
+                
+                $btn.prop('disabled', true).text('Blocco...');
+                
+                $.post(ajaxurl, {
+                    action: 'wplf_block_ip',
+                    ip: ip,
+                    nonce: '<?php echo wp_create_nonce("wplf_block_ip"); ?>'
+                }, function(response) {
+                    if (response.success) {
+                        location.reload();
+                    } else {
+                        alert('Errore: ' + (response.data || 'Impossibile bloccare IP'));
+                        $btn.prop('disabled', false).text('Blocca IP');
+                    }
+                });
             });
         });
         </script>
@@ -328,20 +357,64 @@ class WPLF_Admin {
                         <th>Username</th>
                         <th>Status</th>
                         <th>Messaggio</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($logs as $log): ?>
+                    <?php foreach ($logs as $log): 
+                        $is_blocked = $this->ip_blocker->is_blocked($log['ip']);
+                    ?>
                         <tr>
                             <td><?php echo esc_html($log['timestamp']); ?></td>
                             <td><code><?php echo esc_html($log['ip']); ?></code></td>
                             <td><strong><?php echo esc_html($log['username']); ?></strong></td>
                             <td><?php echo $this->format_status($log['status']); ?></td>
                             <td><?php echo esc_html($log['message']); ?></td>
+                            <td>
+                                <?php if ($is_blocked): ?>
+                                    <span class="wplf-badge wplf-badge-error">IP Bloccato</span>
+                                <?php else: ?>
+                                    <button class="button button-small wplf-block-ip" 
+                                            data-ip="<?php echo esc_attr($log['ip']); ?>"
+                                            data-username="<?php echo esc_attr($log['username']); ?>">
+                                        Blocca IP
+                                    </button>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                $('.wplf-block-ip').on('click', function() {
+                    var $btn = $(this);
+                    var ip = $btn.data('ip');
+                    var username = $btn.data('username');
+                    
+                    if (!confirm('Bloccare l\'IP ' + ip + ' (username: ' + username + ') per ' + 
+                        '<?php echo get_option('wplf_ip_block_duration', 24); ?> ore?')) {
+                        return;
+                    }
+                    
+                    $btn.prop('disabled', true).text('Blocco...');
+                    
+                    $.post(ajaxurl, {
+                        action: 'wplf_block_ip',
+                        ip: ip,
+                        nonce: '<?php echo wp_create_nonce('wplf_block_ip'); ?>'
+                    }, function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Errore: ' + (response.data || 'Impossibile bloccare IP'));
+                            $btn.prop('disabled', false).text('Blocca IP');
+                        }
+                    });
+                });
+            });
+            </script>
         <?php endif;
     }
     
@@ -810,5 +883,34 @@ class WPLF_Admin {
         update_option('wplf_log_retention_days', $log_retention_days);
         
         wp_send_json_success();
+    }
+    
+    /**
+     * AJAX: Blocca IP manualmente
+     */
+    public function ajax_block_ip() {
+        check_ajax_referer('wplf_block_ip', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $ip = sanitize_text_field($_POST['ip']);
+        
+        if (empty($ip) || !filter_var($ip, FILTER_VALIDATE_IP)) {
+            wp_send_json_error('IP non valido');
+        }
+        
+        $blocker = new WPLF_IP_Blocker();
+        $logger = new WPLF_Logger();
+        
+        // Blocca IP con durata configurata
+        $duration = get_option('wplf_ip_block_duration', 24) * 3600;
+        if ($blocker->block_ip($ip, 'Blocco manuale da admin', $duration)) {
+            $logger->log_attempt('', 'blocked', 'IP ' . $ip . ' bloccato manualmente da admin');
+            wp_send_json_success('IP bloccato con successo');
+        } else {
+            wp_send_json_error('Errore durante il blocco');
+        }
     }
 }
