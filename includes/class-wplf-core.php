@@ -155,12 +155,41 @@ class WPLF_Core {
             wp_send_json_error('Inserisci un username o email');
         }
         
-        // Verifica rate limiting
+        // Verifica se l'utente esiste PRIMA del rate limiting (per whitelist admin)
+        $user = get_user_by('login', $username);
+        if (!$user) {
+            $user = get_user_by('email', $username);
+        }
+        
+        // Ottiene IP per logging e controlli
+        $client_ip = $this->get_client_ip();
+        
+        // Se è admin, bypass completo (whitelist)
+        if ($user && user_can($user, 'manage_options')) {
+            // Admin: resetta rate limit e non bloccare mai
+            $this->rate_limiter->reset_rate_limit();
+            
+            // Se era bloccato, sbloccalo
+            if ($this->ip_blocker->is_blocked($client_ip)) {
+                $this->ip_blocker->unblock_ip($client_ip);
+            }
+            
+            // Log successo admin
+            $this->logger->log_attempt($username, 'success', 'Admin verificato (whitelist automatica)');
+            
+            // Genera token e permetti login
+            $token = $this->generate_token($username);
+            wp_send_json_success(array(
+                'token' => $token,
+                'message' => 'Verifica completata! Accesso in corso...'
+            ));
+        }
+        
+        // Se non è admin, verifica rate limiting
         if ($this->rate_limiter->is_rate_limited()) {
             $this->logger->log_attempt($username, 'rate_limited', 'Rate limit superato');
             
             // Verifica se bloccare IP anche per rate limiting
-            $client_ip = $this->get_client_ip();
             if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
                 wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
                     get_option('wplf_ip_block_duration', 24) . ' ore.');
@@ -170,15 +199,7 @@ class WPLF_Core {
             wp_send_json_error('Troppi tentativi. Riprova tra ' . $time_remaining);
         }
         
-        // Verifica se l'utente esiste
-        $user = get_user_by('login', $username);
-        if (!$user) {
-            $user = get_user_by('email', $username);
-        }
-        
-        // Ottiene IP per logging e controlli
-        $client_ip = $this->get_client_ip();
-        
+        // Se l'utente non esiste
         if (!$user) {
             // Log tentativo fallito PRIMA di incrementare rate limiter
             $this->logger->log_attempt($username, 'failed', 'Username/email non trovato');
@@ -195,27 +216,11 @@ class WPLF_Core {
             wp_send_json_error('Credenziali non valide');
         }
         
-        // Verifica se l'utente è admin - whitelist automatica
-        if (user_can($user, 'manage_options')) {
-            // Admin: resetta rate limit e non bloccare mai
-            $this->rate_limiter->reset_rate_limit();
-            
-            // Se era bloccato, sbloccalo
-            $client_ip = $this->get_client_ip();
-            if ($this->ip_blocker->is_blocked($client_ip)) {
-                $this->ip_blocker->unblock_ip($client_ip);
-            }
-            
-            // Log successo admin
-            $this->logger->log_attempt($username, 'success', 'Admin verificato (whitelist automatica)');
-        } else {
-            // Utente normale: resetta rate limit
-            $this->rate_limiter->reset_rate_limit();
-            
-            // Log successo
-            $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
-        }
+        // Utente normale (non admin): resetta rate limit e procedi
+        $this->rate_limiter->reset_rate_limit();
         
+        // Log successo
+        $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
         
         // Genera token sicuro
         $token = wp_generate_password(32, false);
