@@ -69,6 +69,15 @@ class WPLF_Admin {
             'wplf-blocked',
             array($this, 'render_blocked_ips')
         );
+        
+        add_submenu_page(
+            'wp-login-firewall',
+            'Come Funziona',
+            'Come Funziona',
+            'manage_options',
+            'wplf-help',
+            array($this, 'render_help_page')
+        );
     }
     
     /**
@@ -407,5 +416,197 @@ class WPLF_Admin {
         
         echo $csv;
         exit;
+    }
+    
+    /**
+     * Renderizza la pagina di aiuto
+     */
+    public function render_help_page() {
+        ?>
+        <div class="wrap wplf-admin wplf-help-page">
+            <h1><span class="dashicons dashicons-info"></span> Come Funziona WP Login Firewall</h1>
+            
+            <div class="wplf-help-section">
+                <div class="wplf-help-card">
+                    <h2>🎯 Obiettivo del Plugin</h2>
+                    <p>WP Login Firewall protegge il tuo sito WordPress implementando un sistema di verifica a due step prima del login, impedendo attacchi brute force e tentativi di accesso non autorizzati.</p>
+                </div>
+                
+                <div class="wplf-help-card">
+                    <h2>🔐 Come Funziona il Sistema</h2>
+                    
+                    <div class="wplf-step">
+                        <div class="wplf-step-number">1</div>
+                        <div class="wplf-step-content">
+                            <h3>Intercettazione Login</h3>
+                            <p>Quando un utente tenta di accedere a <code>/wp-login.php</code> o <code>/wp-admin</code>, il plugin intercetta la richiesta e mostra una pagina di verifica personalizzata.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="wplf-step">
+                        <div class="wplf-step-number">2</div>
+                        <div class="wplf-step-content">
+                            <h3>Verifica Username</h3>
+                            <p>L'utente deve inserire il proprio username o email. Il sistema verifica che esista nel database senza rivelare informazioni (protezione contro username enumeration).</p>
+                        </div>
+                    </div>
+                    
+                    <div class="wplf-step">
+                        <div class="wplf-step-number">3</div>
+                        <div class="wplf-step-content">
+                            <h3>Generazione Token</h3>
+                            <p>Se l'username è valido, viene generato un token sicuro monouso con scadenza di 5 minuti. L'utente viene reindirizzato al form di login WordPress standard con il token.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="wplf-step">
+                        <div class="wplf-step-number">4</div>
+                        <div class="wplf-step-content">
+                            <h3>Login WordPress</h3>
+                            <p>Solo con un token valido l'utente può accedere al form di login di WordPress e inserire la password. Il token viene distrutto dopo il primo utilizzo.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="wplf-help-card">
+                    <h2>🛡️ Livelli di Protezione</h2>
+                    
+                    <div class="wplf-protection-level">
+                        <h3><span class="dashicons dashicons-clock"></span> Rate Limiting</h3>
+                        <ul>
+                            <li><strong>Limite:</strong> Massimo 5 tentativi ogni 15 minuti per IP</li>
+                            <li><strong>Scopo:</strong> Rallenta gli attacchi automatici</li>
+                            <li><strong>Reset:</strong> Automatico dopo 15 minuti o dopo verifica riuscita</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="wplf-protection-level">
+                        <h3><span class="dashicons dashicons-lock"></span> Blocco IP Automatico</h3>
+                        <ul>
+                            <li><strong>Soglia:</strong> 10 tentativi falliti nell'ultima ora</li>
+                            <li><strong>Durata:</strong> Blocco di 24 ore</li>
+                            <li><strong>Effetto:</strong> Impossibilità totale di accedere alla verifica</li>
+                            <li><strong>Sblocco:</strong> Manuale dal pannello admin o automatico dopo 24h</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="wplf-protection-level">
+                        <h3><span class="dashicons dashicons-admin-users"></span> Whitelist Amministratori</h3>
+                        <ul>
+                            <li><strong>Protezione:</strong> Gli admin non vengono mai bloccati</li>
+                            <li><strong>Sblocco:</strong> Automatico se un admin era bloccato</li>
+                            <li><strong>Rate Limit:</strong> Azzerato automaticamente per admin</li>
+                            <li><strong>Scopo:</strong> Prevenire lockout accidentali</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="wplf-protection-level">
+                        <h3><span class="dashicons dashicons-visibility"></span> Logging Completo</h3>
+                        <ul>
+                            <li><strong>Registra:</strong> Tutti i tentativi (riusciti e falliti)</li>
+                            <li><strong>Informazioni:</strong> IP, username, timestamp, user agent, status</li>
+                            <li><strong>Statistiche:</strong> Dashboard con metriche in tempo reale</li>
+                            <li><strong>Esportazione:</strong> Download log in formato CSV</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="wplf-help-card">
+                    <h2>📊 Status dei Log</h2>
+                    <table class="wplf-status-table">
+                        <tr>
+                            <td><span class="wplf-badge wplf-badge-success">success</span></td>
+                            <td>Username verificato con successo, token generato</td>
+                        </tr>
+                        <tr>
+                            <td><span class="wplf-badge wplf-badge-error">failed</span></td>
+                            <td>Username non trovato o credenziali non valide</td>
+                        </tr>
+                        <tr>
+                            <td><span class="wplf-badge wplf-badge-warning">rate_limited</span></td>
+                            <td>Tentativo bloccato per superamento rate limit</td>
+                        </tr>
+                        <tr>
+                            <td><span class="wplf-badge wplf-badge-error">blocked</span></td>
+                            <td>Tentativo da IP bloccato</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="wplf-help-card">
+                    <h2>⚙️ Configurazione Tecnica</h2>
+                    <table class="wplf-config-table">
+                        <tr>
+                            <th>Parametro</th>
+                            <th>Valore</th>
+                            <th>File</th>
+                        </tr>
+                        <tr>
+                            <td>Rate Limit - Max Tentativi</td>
+                            <td><code>5</code></td>
+                            <td>class-wplf-rate-limiter.php</td>
+                        </tr>
+                        <tr>
+                            <td>Rate Limit - Finestra Temporale</td>
+                            <td><code>15 minuti</code></td>
+                            <td>class-wplf-rate-limiter.php</td>
+                        </tr>
+                        <tr>
+                            <td>Blocco IP - Soglia Tentativi</td>
+                            <td><code>10</code></td>
+                            <td>class-wplf-ip-blocker.php</td>
+                        </tr>
+                        <tr>
+                            <td>Blocco IP - Durata</td>
+                            <td><code>24 ore</code></td>
+                            <td>class-wplf-ip-blocker.php</td>
+                        </tr>
+                        <tr>
+                            <td>Token - Scadenza</td>
+                            <td><code>5 minuti</code></td>
+                            <td>class-wplf-core.php</td>
+                        </tr>
+                        <tr>
+                            <td>Log - Max Entries</td>
+                            <td><code>1000</code></td>
+                            <td>class-wplf-logger.php</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="wplf-help-card">
+                    <h2>🎨 Personalizzazione</h2>
+                    <p>Puoi personalizzare l'aspetto della pagina di verifica modificando le CSS variables in:</p>
+                    <p><code>assets/css/style.css</code></p>
+                    <p>Variabili disponibili:</p>
+                    <ul>
+                        <li><code>--wplf-primary</code> - Colore primario</li>
+                        <li><code>--wplf-secondary</code> - Colore secondario</li>
+                        <li><code>--wplf-background</code> - Sfondo</li>
+                        <li><code>--wplf-text-primary</code> - Colore testo principale</li>
+                        <li>...e oltre 40 variabili configurabili</li>
+                    </ul>
+                </div>
+                
+                <div class="wplf-help-card wplf-warning-card">
+                    <h2>⚠️ Note Importanti</h2>
+                    <ul>
+                        <li><strong>Backup:</strong> Effettua sempre un backup prima di modificare i file del plugin</li>
+                        <li><strong>Admin Lockout:</strong> Gli amministratori sono automaticamente esclusi dal blocco IP</li>
+                        <li><strong>Cache:</strong> Se usi un plugin di cache, svuotalo dopo l'installazione</li>
+                        <li><strong>CDN:</strong> Assicurati che il CDN passi correttamente l'IP reale del visitatore</li>
+                        <li><strong>Performance:</strong> I log sono limitati a 1000 entries per non appesantire il database</li>
+                    </ul>
+                </div>
+                
+                <div class="wplf-help-card wplf-info-card">
+                    <h2>📝 Informazioni Plugin</h2>
+                    <p><strong>Versione:</strong> <?php echo WPLF_VERSION; ?></p>
+                    <p><strong>Autore:</strong> DevRoom by RoomZero Creative Solutions</p>
+                    <p><strong>Repository:</strong> <a href="https://github.com/Diecigradi/wp-login-firewall" target="_blank">GitHub</a></p>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 }
