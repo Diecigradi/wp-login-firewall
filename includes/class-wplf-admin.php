@@ -235,7 +235,7 @@ class WPLF_Admin {
                 var ip = $btn.data('ip');
                 var username = $btn.data('username');
                 
-                if (!confirm('Bloccare l\\'IP ' + ip + ' (username: ' + username + ') per ' + 
+                if (!confirm('Bloccare l\'IP ' + ip + ' (username: ' + username + ') per ' + 
                     '<?php echo get_option("wplf_ip_block_duration", 24); ?> ore?')) {
                     return;
                 }
