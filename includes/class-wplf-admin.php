@@ -385,36 +385,6 @@ class WPLF_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            
-            <script>
-            jQuery(document).ready(function($) {
-                $('.wplf-block-ip').on('click', function() {
-                    var $btn = $(this);
-                    var ip = $btn.data('ip');
-                    var username = $btn.data('username');
-                    
-                    if (!confirm('Bloccare l\'IP ' + ip + ' (username: ' + username + ') per ' + 
-                        '<?php echo get_option('wplf_ip_block_duration', 24); ?> ore?')) {
-                        return;
-                    }
-                    
-                    $btn.prop('disabled', true).text('Blocco...');
-                    
-                    $.post(ajaxurl, {
-                        action: 'wplf_block_ip',
-                        ip: ip,
-                        nonce: '<?php echo wp_create_nonce('wplf_block_ip'); ?>'
-                    }, function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert('Errore: ' + (response.data || 'Impossibile bloccare IP'));
-                            $btn.prop('disabled', false).text('Blocca IP');
-                        }
-                    });
-                });
-            });
-            </script>
         <?php endif;
     }
     
