@@ -3297,3 +3297,103 @@ Il blocco ora funziona correttamente! 🔒
 
 ---
 
+_**User (2025-11-30 00:21Z)**_
+
+Ok. Ora aggiungi una pagina admin dove spieghi il funzionamento del plugin
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+Ora aggiungo gli stili CSS per la pagina di aiuto: 
+```
+
+```
+✅ **Pagina "Come Funziona" creata e pushata!**
+
+**Cosa ho aggiunto:**
+
+### 📚 Nuova pagina nel menu admin con:
+
+1. **🎯 Obiettivo del Plugin** - Spiegazione chiara dello scopo
+
+2. **🔐 Come Funziona** - 4 step illustrati:
+   - Intercettazione Login
+   - Verifica Username
+   - Generazione Token
+   - Login WordPress
+
+3. **🛡️ 4 Livelli di Protezione:**
+   - **Rate Limiting** (5 tentativi / 15 min)
+   - **Blocco IP** (10 tentativi / 1h → 24h)
+   - **Whitelist Admin** (protezione lockout)
+   - **Logging Completo** (tracking totale)
+
+4. **📊 Tabelle informative:**
+   - Status dei log con badge
+   - Configurazione tecnica (valori e file)
+   - Guida personalizzazione CSS
+
+5. **⚠️ Note importanti:**
+   - Backup
+   - Cache
+   - CDN
+   - Performance
+
+**Accesso:** Dashboard WordPress → **Login Firewall → Come Funziona**
+
+La documentazione è completa, visivamente accattivante e facile da consultare! 📖✨
+
+---
+
+_**User (2025-11-30 00:29Z)**_
+
+Quando compare il testo Credenziali non valide vengono applicate le stesse regole
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Sì, esattamente! Quando compare "Credenziali non valide" significa che:
+
+**Cosa è successo:**
+- Username/email **non trovato** nel database
+
+**Conseguenze immediate:**
+1. ✅ **Rate limit incrementato** (+1 tentativo)
+2. ✅ **Log registrato** con status `'failed'`
+3. ✅ **Controllo blocco IP** - verifica se raggiunta soglia 10 tentativi
+
+**Quindi le regole applicate sono:**
+- Dopo 5 tentativi → Rate limit (15 minuti di attesa)
+- Dopo 10 tentativi falliti (ultima ora) → **IP bloccato 24 ore**
+
+**Codice in `class-wplf-core.php`:**
+```php
+if (!$user) {
+    // Incrementa tentativi
+    $this->rate_limiter->increment_attempts();
+    
+    // Log tentativo fallito
+    $this->logger->log_attempt($username, 'failed', 'Username/email non trovato');
+    
+    // Verifica se bloccare IP
+    $client_ip = $this->get_client_ip();
+    $this->ip_blocker->check_and_block($client_ip, $this->logger);
+    
+    wp_send_json_error('Credenziali non valide');
+}
+```
+
+**"Credenziali non valide"** è un messaggio generico per evitare username enumeration - l'attacker non sa se l'username esiste o no! 🔒
+
+---
+

@@ -103,11 +103,10 @@ class WPLF_Admin {
         
         ?>
         <div class="wrap wplf-admin">
-            <h1><span class="dashicons dashicons-shield"></span> WP Login Firewall - Dashboard</h1>
+            <h1>WP Login Firewall - Dashboard</h1>
             
             <div class="wplf-stats-grid">
                 <div class="wplf-stat-card">
-                    <div class="wplf-stat-icon dashicons dashicons-chart-line"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['total_attempts']); ?></div>
                         <div class="wplf-stat-label">Tentativi Totali</div>
@@ -115,7 +114,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card wplf-success">
-                    <div class="wplf-stat-icon dashicons dashicons-yes-alt"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['successful']); ?></div>
                         <div class="wplf-stat-label">Accessi Riusciti</div>
@@ -123,7 +121,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card wplf-error">
-                    <div class="wplf-stat-icon dashicons dashicons-dismiss"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['failed']); ?></div>
                         <div class="wplf-stat-label">Tentativi Falliti</div>
@@ -131,7 +128,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card wplf-warning">
-                    <div class="wplf-stat-icon dashicons dashicons-shield-alt"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['blocked'] + $stats['rate_limited']); ?></div>
                         <div class="wplf-stat-label">Accessi Bloccati</div>
@@ -141,7 +137,6 @@ class WPLF_Admin {
             
             <div class="wplf-stats-grid">
                 <div class="wplf-stat-card">
-                    <div class="wplf-stat-icon dashicons dashicons-clock"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['last_24h']); ?></div>
                         <div class="wplf-stat-label">Ultime 24 Ore</div>
@@ -149,7 +144,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card">
-                    <div class="wplf-stat-icon dashicons dashicons-calendar"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['last_7d']); ?></div>
                         <div class="wplf-stat-label">Ultimi 7 Giorni</div>
@@ -157,7 +151,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card">
-                    <div class="wplf-stat-icon dashicons dashicons-location"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format($stats['unique_ips']); ?></div>
                         <div class="wplf-stat-label">IP Unici</div>
@@ -165,7 +158,6 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-stat-card">
-                    <div class="wplf-stat-icon dashicons dashicons-lock"></div>
                     <div class="wplf-stat-content">
                         <div class="wplf-stat-value"><?php echo number_format(count($blocked_ips)); ?></div>
                         <div class="wplf-stat-label">IP Bloccati</div>
@@ -190,14 +182,14 @@ class WPLF_Admin {
         
         ?>
         <div class="wrap wplf-admin">
-            <h1><span class="dashicons dashicons-list-view"></span> Log Accessi</h1>
+            <h1>Log Accessi</h1>
             
             <div class="wplf-actions">
                 <button id="wplf-export-logs" class="button button-secondary">
-                    <span class="dashicons dashicons-download"></span> Esporta CSV
+                    Esporta CSV
                 </button>
                 <button id="wplf-clear-logs" class="button button-secondary">
-                    <span class="dashicons dashicons-trash"></span> Cancella Log
+                    Cancella Log
                 </button>
             </div>
             
@@ -238,11 +230,10 @@ class WPLF_Admin {
         
         ?>
         <div class="wrap wplf-admin">
-            <h1><span class="dashicons dashicons-lock"></span> IP Bloccati</h1>
+            <h1>IP Bloccati</h1>
             
             <?php if (empty($blocked_ips)): ?>
                 <div class="wplf-empty-state">
-                    <span class="dashicons dashicons-yes-alt"></span>
                     <h2>Nessun IP Bloccato</h2>
                     <p>Non ci sono IP attualmente bloccati.</p>
                 </div>
@@ -316,7 +307,6 @@ class WPLF_Admin {
     private function render_logs_table($logs) {
         if (empty($logs)): ?>
             <div class="wplf-empty-state">
-                <span class="dashicons dashicons-info"></span>
                 <p>Nessun log disponibile.</p>
             </div>
         <?php else: ?>
@@ -424,16 +414,16 @@ class WPLF_Admin {
     public function render_help_page() {
         ?>
         <div class="wrap wplf-admin wplf-help-page">
-            <h1><span class="dashicons dashicons-info"></span> Come Funziona WP Login Firewall</h1>
+            <h1>Come Funziona WP Login Firewall</h1>
             
             <div class="wplf-help-section">
                 <div class="wplf-help-card">
-                    <h2>🎯 Obiettivo del Plugin</h2>
+                    <h2>Obiettivo del Plugin</h2>
                     <p>WP Login Firewall protegge il tuo sito WordPress implementando un sistema di verifica a due step prima del login, impedendo attacchi brute force e tentativi di accesso non autorizzati.</p>
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>🔐 Come Funziona il Sistema</h2>
+                    <h2>Come Funziona il Sistema</h2>
                     
                     <div class="wplf-step">
                         <div class="wplf-step-number">1</div>
@@ -469,10 +459,10 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>🛡️ Livelli di Protezione</h2>
+                    <h2>Livelli di Protezione</h2>
                     
                     <div class="wplf-protection-level">
-                        <h3><span class="dashicons dashicons-clock"></span> Rate Limiting</h3>
+                        <h3>Rate Limiting</h3>
                         <ul>
                             <li><strong>Limite:</strong> Massimo 5 tentativi ogni 15 minuti per IP</li>
                             <li><strong>Scopo:</strong> Rallenta gli attacchi automatici</li>
@@ -481,7 +471,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3><span class="dashicons dashicons-lock"></span> Blocco IP Automatico</h3>
+                        <h3>Blocco IP Automatico</h3>
                         <ul>
                             <li><strong>Soglia:</strong> 10 tentativi falliti nell'ultima ora</li>
                             <li><strong>Durata:</strong> Blocco di 24 ore</li>
@@ -491,7 +481,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3><span class="dashicons dashicons-admin-users"></span> Whitelist Amministratori</h3>
+                        <h3>Whitelist Amministratori</h3>
                         <ul>
                             <li><strong>Protezione:</strong> Gli admin non vengono mai bloccati</li>
                             <li><strong>Sblocco:</strong> Automatico se un admin era bloccato</li>
@@ -501,7 +491,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3><span class="dashicons dashicons-visibility"></span> Logging Completo</h3>
+                        <h3>Logging Completo</h3>
                         <ul>
                             <li><strong>Registra:</strong> Tutti i tentativi (riusciti e falliti)</li>
                             <li><strong>Informazioni:</strong> IP, username, timestamp, user agent, status</li>
@@ -512,7 +502,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>📊 Status dei Log</h2>
+                    <h2>Status dei Log</h2>
                     <table class="wplf-status-table">
                         <tr>
                             <td><span class="wplf-badge wplf-badge-success">success</span></td>
@@ -534,7 +524,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>⚙️ Configurazione Tecnica</h2>
+                    <h2>Configurazione Tecnica</h2>
                     <table class="wplf-config-table">
                         <tr>
                             <th>Parametro</th>
@@ -575,7 +565,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>🎨 Personalizzazione</h2>
+                    <h2>Personalizzazione</h2>
                     <p>Puoi personalizzare l'aspetto della pagina di verifica modificando le CSS variables in:</p>
                     <p><code>assets/css/style.css</code></p>
                     <p>Variabili disponibili:</p>
@@ -589,7 +579,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card wplf-warning-card">
-                    <h2>⚠️ Note Importanti</h2>
+                    <h2>Note Importanti</h2>
                     <ul>
                         <li><strong>Backup:</strong> Effettua sempre un backup prima di modificare i file del plugin</li>
                         <li><strong>Admin Lockout:</strong> Gli amministratori sono automaticamente esclusi dal blocco IP</li>
@@ -600,7 +590,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card wplf-info-card">
-                    <h2>📝 Informazioni Plugin</h2>
+                    <h2>Informazioni Plugin</h2>
                     <p><strong>Versione:</strong> <?php echo WPLF_VERSION; ?></p>
                     <p><strong>Autore:</strong> DevRoom by RoomZero Creative Solutions</p>
                     <p><strong>Repository:</strong> <a href="https://github.com/Diecigradi/wp-login-firewall" target="_blank">GitHub</a></p>
