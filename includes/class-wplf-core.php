@@ -249,12 +249,16 @@ class WPLF_Core {
             // Incrementa tentativi rate limiter
             $this->rate_limiter->increment_attempts();
             
+            // Delay randomizzato per prevenire timing attack (200-500ms)
+            usleep(rand(200000, 500000));
+            
             // Verifica se bloccare IP (conta tutti i failed + rate_limited nell'ultima ora)
             if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
-                wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
-                    get_option('wplf_ip_block_duration', 24) . ' ore.');
+                // Messaggio generico (non rivela se username esiste)
+                wp_send_json_error('Credenziali non valide. Riprova più tardi.');
             }
             
+            // Messaggio generico uguale sia per user non esistente che per altri errori
             wp_send_json_error('Credenziali non valide');
         }
         
