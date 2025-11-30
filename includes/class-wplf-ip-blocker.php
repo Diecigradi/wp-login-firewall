@@ -13,19 +13,13 @@ if (!defined('ABSPATH')) {
 class WPLF_IP_Blocker {
     
     /**
-     * Ottiene l'IP del client
+     * Ottiene l'IP del client in modo sicuro
+     * 
+     * Usa solo REMOTE_ADDR per prevenire IP spoofing via header HTTP manipolabili.
+     * HTTP_CLIENT_IP e HTTP_X_FORWARDED_FOR possono essere falsificati dall'attaccante.
      */
     private function get_client_ip() {
-        $ip = '';
-        
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else {
-            $ip = $_SERVER['REMOTE_ADDR'];
-        }
-        
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
     

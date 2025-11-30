@@ -291,20 +291,58 @@ class WPLF_Core {
     }
     
     /**
-     * Ottiene l'IP del client
+     * Ottiene l'IP del client in modo sicuro
+     * 
+     * Usa solo REMOTE_ADDR per prevenire IP spoofing.
+     * Se dietro proxy/CDN affidabile (Cloudflare, ecc), decommentare la logica X-Forwarded-For
      */
     private function get_client_ip() {
-        $ip = '';
+        // Lista proxy/CDN affidabili (opzionale - da configurare se necessario)
+        $trusted_proxies = array(
+            // Esempio Cloudflare: '103.21.244.0/22', '103.22.200.0/22', ecc.
+            // Per abilitare, decommentare e aggiungere range IP del tuo proxy
+        );
         
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else {
-            $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+        
+        // Se hai un proxy/CDN affidabile, valida X-Forwarded-For
+        if (!empty($trusted_proxies) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $remote_ip = $_SERVER['REMOTE_ADDR'];
+            
+            // Verifica se REMOTE_ADDR è un proxy affidabile
+            foreach ($trusted_proxies as $proxy_range) {
+                // Controllo CIDR semplificato - in produzione usare libreria IP
+                if ($this->ip_in_range($remote_ip, $proxy_range)) {
+                    // Proxy affidabile: usa primo IP in X-Forwarded-For
+                    $forwarded_ips = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+                    $ip = $forwarded_ips[0];
+                    break;
+                }
+            }
         }
         
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+    }
+    
+    /**
+     * Verifica se un IP è in un range CIDR
+     * 
+     * @param string $ip IP da verificare
+     * @param string $range Range CIDR (es: 192.168.1.0/24)
+     * @return bool
+     */
+    private function ip_in_range($ip, $range) {
+        if (strpos($range, '/') === false) {
+            return $ip === $range;
+        }
+        
+        list($subnet, $mask) = explode('/', $range);
+        
+        $ip_long = ip2long($ip);
+        $subnet_long = ip2long($subnet);
+        $mask_long = -1 << (32 - (int)$mask);
+        
+        return ($ip_long & $mask_long) === ($subnet_long & $mask_long);
     }
     
     /**
