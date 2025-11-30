@@ -47,7 +47,12 @@ class WPLF_Core {
             exit;
         }
         
-        // Se c'è un token valido, lascia passare
+        // Se c'è un token valido nel cookie, lascia passare
+        if (isset($_COOKIE['wplf_token']) && $this->validate_token($_COOKIE['wplf_token'])) {
+            return;
+        }
+        
+        // Backward compatibility: leggi anche da URL (deprecato)
         if (isset($_GET['wplf_token']) && $this->validate_token($_GET['wplf_token'])) {
             return;
         }
@@ -181,8 +186,8 @@ class WPLF_Core {
             // Log successo admin
             $this->logger->log_attempt($username, 'success', 'Admin verificato (whitelist automatica)');
             
-            // Genera token sicuro
-            $token = wp_generate_password(32, false);
+            // Genera token sicuro con random_bytes (crittograficamente sicuro)
+            $token = bin2hex(random_bytes(32));
             
             // Salva il token come transient (5 minuti)
             set_transient('wplf_token_' . $token, array(
@@ -191,9 +196,22 @@ class WPLF_Core {
                 'timestamp' => current_time('timestamp')
             ), 5 * MINUTE_IN_SECONDS);
             
-            // Costruisci URL di redirect con token
+            // Imposta cookie sicuro invece di passare token in URL
+            setcookie(
+                'wplf_token',
+                $token,
+                array(
+                    'expires' => time() + (5 * 60), // 5 minuti
+                    'path' => COOKIEPATH,
+                    'domain' => COOKIE_DOMAIN,
+                    'secure' => is_ssl(), // Solo HTTPS se disponibile
+                    'httponly' => true, // Non accessibile via JavaScript
+                    'samesite' => 'Lax' // Protezione CSRF
+                )
+            );
+            
+            // Redirect senza token in URL
             $redirect_url = wp_login_url();
-            $redirect_url = add_query_arg('wplf_token', $token, $redirect_url);
             
             // Preserva parametri originali
             if (!empty($_POST['redirect_to'])) {
@@ -246,8 +264,8 @@ class WPLF_Core {
         // Log successo
         $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
         
-        // Genera token sicuro
-        $token = wp_generate_password(32, false);
+        // Genera token sicuro con random_bytes (crittograficamente sicuro)
+        $token = bin2hex(random_bytes(32));
         
         // Salva il token come transient (5 minuti)
         set_transient('wplf_token_' . $token, array(
@@ -256,9 +274,22 @@ class WPLF_Core {
             'timestamp' => current_time('timestamp')
         ), 5 * MINUTE_IN_SECONDS);
         
-        // Costruisci URL di redirect con token
+        // Imposta cookie sicuro invece di passare token in URL
+        setcookie(
+            'wplf_token',
+            $token,
+            array(
+                'expires' => time() + (5 * 60), // 5 minuti
+                'path' => COOKIEPATH,
+                'domain' => COOKIE_DOMAIN,
+                'secure' => is_ssl(), // Solo HTTPS se disponibile
+                'httponly' => true, // Non accessibile via JavaScript
+                'samesite' => 'Lax' // Protezione CSRF
+            )
+        );
+        
+        // Redirect senza token in URL
         $redirect_url = wp_login_url();
-        $redirect_url = add_query_arg('wplf_token', $token, $redirect_url);
         
         // Preserva parametri originali
         if (!empty($_POST['redirect_to'])) {
@@ -275,9 +306,18 @@ class WPLF_Core {
     }
     
     /**
-     * Valida il token
+     * Valida il token dal cookie
      */
-    private function validate_token($token) {
+    private function validate_token($token = null) {
+        // Se non passato come parametro, leggi dal cookie
+        if ($token === null) {
+            $token = isset($_COOKIE['wplf_token']) ? $_COOKIE['wplf_token'] : '';
+        }
+        
+        if (empty($token)) {
+            return false;
+        }
+        
         $token_data = get_transient('wplf_token_' . $token);
         
         if (!$token_data) {
@@ -286,6 +326,20 @@ class WPLF_Core {
         
         // Elimina il token (one-time use)
         delete_transient('wplf_token_' . $token);
+        
+        // Elimina il cookie
+        setcookie(
+            'wplf_token',
+            '',
+            array(
+                'expires' => time() - 3600,
+                'path' => COOKIEPATH,
+                'domain' => COOKIE_DOMAIN,
+                'secure' => is_ssl(),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            )
+        );
         
         return true;
     }

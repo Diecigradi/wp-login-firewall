@@ -4449,9 +4449,46 @@ Vuoi che proceda con i fix delle vulnerabilità critiche?
 
 ---
 
-_**User (2025-11-30 15:17Z)**_
+_**User (2025-11-30 15:18Z)**_
 
 Segnamoci tutti i fix di vulnerabilità e procediamo con il primo urgente
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+✅ **Fix IP Spoofing completato e pushato** (commit `13fd66b`)
+
+**Cosa è stato risolto:**
+- ❌ Prima: Attaccante poteva inviare `X-Forwarded-For: 1.1.1.1` e bypassare blocchi
+- ✅ Ora: Solo `REMOTE_ADDR` (controllato dal server, non manipolabile)
+
+**Modifiche:**
+- 3 file aggiornati: `class-wplf-core.php`, `class-wplf-rate-limiter.php`, `class-wplf-ip-blocker.php`
+- Aggiunto supporto opzionale per proxy affidabili (Cloudflare, ecc.) con whitelist CIDR
+- Default: massima sicurezza, solo `REMOTE_ADDR`
+
+**Nota:** Se usi Cloudflare/CDN, devi decommentare `$trusted_proxies` e aggiungere gli IP range del proxy, altrimenti vedrai sempre l'IP del proxy invece del client reale.
+
+Procedo con il **prossimo fix prioritario** (Token via Cookie)?
+
+---
+
+_**User (2025-11-30 15:23Z)**_
+
+Procedi
 
 ---
 
