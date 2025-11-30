@@ -736,6 +736,24 @@ class WPLF_Admin {
                                 </fieldset>
                             </td>
                         </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Whitelist Amministratori</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="checkbox" name="admin_whitelist" value="1" 
+                                               <?php checked($settings['admin_whitelist'], 1); ?>>
+                                        Abilita whitelist automatica per amministratori
+                                    </label>
+                                    <p class="description">
+                                        Se abilitato, gli amministratori bypassano sempre rate limiting e blocchi IP. <strong>Disabilitare solo se si è certi di ricordare le credenziali di accesso.</strong>
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
                 
@@ -788,6 +806,7 @@ class WPLF_Admin {
                 $('input[name="ip_block_threshold"]').val(10);
                 $('input[name="ip_block_duration"]').val(24);
                 $('input[name="log_retention_days"]').val(30);
+                $('input[name="admin_whitelist"]').prop('checked', true);
                 
                 $('#wplf-settings-form').submit();
             });
@@ -805,7 +824,8 @@ class WPLF_Admin {
             'rate_limit_minutes' => get_option('wplf_rate_limit_minutes', 15),
             'ip_block_threshold' => get_option('wplf_ip_block_threshold', 10),
             'ip_block_duration' => get_option('wplf_ip_block_duration', 24),
-            'log_retention_days' => get_option('wplf_log_retention_days', 30)
+            'log_retention_days' => get_option('wplf_log_retention_days', 30),
+            'admin_whitelist' => get_option('wplf_admin_whitelist', 1)
         );
     }
     
@@ -851,6 +871,10 @@ class WPLF_Admin {
             wp_send_json_error('Retention log deve essere tra 7 e 365 giorni');
         }
         update_option('wplf_log_retention_days', $log_retention_days);
+        
+        // Admin whitelist (checkbox: 1 o 0)
+        $admin_whitelist = isset($settings['admin_whitelist']) ? 1 : 0;
+        update_option('wplf_admin_whitelist', $admin_whitelist);
         
         wp_send_json_success();
     }

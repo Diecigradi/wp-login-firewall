@@ -164,8 +164,11 @@ class WPLF_Core {
         // Ottiene IP per logging e controlli
         $client_ip = $this->get_client_ip();
         
-        // Se è admin, bypass completo (whitelist)
-        if ($user && user_can($user, 'manage_options')) {
+        // Verifica se whitelist admin è abilitata
+        $admin_whitelist_enabled = get_option('wplf_admin_whitelist', 1);
+        
+        // Se è admin E whitelist abilitata, bypass completo
+        if ($user && user_can($user, 'manage_options') && $admin_whitelist_enabled) {
             // Admin: resetta rate limit e non bloccare mai
             $this->rate_limiter->reset_rate_limit();
             
