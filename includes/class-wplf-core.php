@@ -485,6 +485,11 @@ class WPLF_Core {
             return $user;
         }
         
+        // IMPORTANTE: traccia SOLO se c'è stato un submit del form (POST)
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($username) || empty($password)) {
+            return $user;
+        }
+        
         $token = sanitize_text_field($_COOKIE['wplf_token']);
         $token_data = get_transient('wplf_token_' . $token);
         

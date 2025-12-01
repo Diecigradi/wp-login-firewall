@@ -80,7 +80,7 @@ class WPLF_Login_Enhancer {
                 <p>
                     Password errata. Tentativi rimanenti: <strong><?php echo esc_html($remaining_attempts); ?>/<?php echo esc_html($max_attempts); ?></strong>
                 </p>
-                <?php if ($remaining_attempts <= 2): ?>
+                <?php if ($remaining_attempts == 1): ?>
                     <p class="wplf-attempts-hint">
                         Se sbagli di nuovo dovrai procedere con una nuova verifica.
                     </p>
