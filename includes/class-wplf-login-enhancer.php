@@ -38,7 +38,7 @@ class WPLF_Login_Enhancer {
         ?>
         <div class="wplf-token-notice">
             <p id="wplf-token-message">
-                Verifica completata. Token valido per <strong><?php echo esc_html($token_lifetime); ?> minuti</strong>
+                Verifica completata. Hai <strong><?php echo esc_html($token_lifetime); ?> minuti</strong>
             </p>
         </div>
         
@@ -56,7 +56,7 @@ class WPLF_Login_Enhancer {
             
             function updateCountdown() {
                 if (remaining <= 0) {
-                    msg.innerHTML = 'Token scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
+                    msg.innerHTML = 'Tempo scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
                     msg.parentElement.className = 'wplf-token-notice wplf-expired';
                     return;
                 }
@@ -67,7 +67,7 @@ class WPLF_Login_Enhancer {
                 // Formatta con zero padding
                 var formattedTime = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
                 
-                msg.innerHTML = 'Verifica completata. Token valido per: <strong>' + formattedTime + '</strong>';
+                msg.innerHTML = 'Verifica completata. Hai <strong>' + formattedTime + '</strong> rimanenti.';
                 
                 // Cambia colore quando mancano meno di 60 secondi
                 if (remaining <= 30) {
@@ -140,7 +140,7 @@ class WPLF_Login_Enhancer {
         /* Stato scaduto */
         .wplf-token-notice.wplf-expired {
             background: #ff0000ff;
-            border-color: #3a3a3aff;
+            border-color: #ff0000ff;
         }
         
         .wplf-token-notice.wplf-expired p {
