@@ -24,10 +24,14 @@ class WPLF_Core {
         require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-rate-limiter.php';
         require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-logger.php';
         require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-ip-blocker.php';
+        require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-login-enhancer.php';
         
         $this->rate_limiter = new WPLF_Rate_Limiter();
         $this->logger = new WPLF_Logger();
         $this->ip_blocker = new WPLF_IP_Blocker();
+        
+        // Inizializza login enhancer (countdown token)
+        new WPLF_Login_Enhancer();
         
         // Intercetta il login
         add_action('login_init', array($this, 'intercept_login'));

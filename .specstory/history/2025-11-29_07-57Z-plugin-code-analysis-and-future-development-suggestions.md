@@ -4851,7 +4851,7 @@ Ora il token è **completamente invisibile** all'utente e protetto contro XSS, C
 
 ---
 
-_**User (2025-12-01 07:08Z)**_
+_**User (2025-12-01 07:10Z)**_
 
 Ora vedo che il token ha scadenza dopo 5 minuti, vorrei che questo dato fosse modificabile nella pagina impostazioni in backend
 
@@ -4864,6 +4864,415 @@ _**Agent (model copilot/claude-sonnet-4.5)**_
 
 ```
 
+```
+
+```
+✅ **Fatto!** Ora la scadenza del token è **completamente configurabile** dalle Impostazioni.
+
+## 🎛️ Cosa è stato aggiunto:
+
+### **Pagina Impostazioni** (Backend)
+- ✅ Nuovo campo **"Scadenza Token"**
+- ✅ Range: **1-60 minuti** (default: 5)
+- ✅ Posizionato tra "Retention Log" e "Whitelist Amministratori"
+- ✅ Descrizione: "Tempo di validità del token di verifica"
+
+### **Implementazione Tecnica**
+
+**Opzione Database:**
+```php
+wplf_token_lifetime = 5  // Default: 5 minuti
+```
+
+**Utilizzo nel Codice:**
+```php
+// Prima (hardcoded)
+), 5 * MINUTE_IN_SECONDS);
+
+// Dopo (configurabile)
+$token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+), $token_lifetime);
+```
+
+**Applicato in 4 punti:**
+1. Transient admin (linea ~197)
+2. Cookie admin (linea ~205)
+3. Transient utente normale (linea ~279)
+4. Cookie utente normale (linea ~287)
+
+### **Validazione**
+- ✅ Min: 1 minuto
+- ✅ Max: 60 minuti
+- ✅ Tipo: numero intero
+- ✅ Errore se fuori range
+
+### **Ripristina Predefiniti**
+- ✅ Pulsante "Ripristina Predefiniti" imposta 5 minuti
+
+## 🎯 Come Usarlo
+
+1. **Backend** → Login Firewall → **Impostazioni**
+2. Cerca il campo **"Scadenza Token"**
+3. Imposta minuti (1-60)
+4. Clicca **"Salva Impostazioni"**
+
+**Esempi:**
+- **1 minuto**: Massima sicurezza, utente deve essere veloce
+- **5 minuti**: Default bilanciato
+- **10-15 minuti**: User-friendly per utenti lenti
+- **30-60 minuti**: Ambienti intranet/trusted
+
+Commit `0ab6f03` pushato! 🚀
+
+---
+
+_**User (2025-12-01 07:15Z)**_
+
+Ok. Ora vorrei che se finisco nella pagina di login standard di wordpress con il token venga visualizzato un countdown per la scadenza del token. Prima di procedere spiegami se possibile, se complesso e come vorresti fare
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 🤔 Analisi Richiesta: Countdown Scadenza Token
+
+### 📍 Dove Mostrare il Countdown
+
+Il token viene usato quando l'utente arriva a `wp-login.php` dopo la verifica username. Quindi il countdown dovrebbe apparire:
+- **Pagina**: Form di login standard WordPress
+- **Posizione**: Sopra o sotto il form
+- **Messaggio**: "Token valido per: 4:32 rimanenti" con countdown live
+
+### 🔍 Complessità
+
+**RATING: MEDIA** (6/10)
+
+**Motivi:**
+1. ✅ **FACILE**: Calcolare scadenza token (timestamp + lifetime)
+2. ✅ **FACILE**: Passare scadenza al frontend via JavaScript
+3. ⚠️ **MEDIO**: Modificare form login WordPress (hook `login_form`)
+4. ⚠️ **MEDIO**: Countdown JavaScript con aggiornamento ogni secondo
+5. ⚠️ **MEDIO**: Gestire scadenza (redirect o messaggio)
+
+### 🛠️ Approccio Proposto
+
+#### **1. Backend - Passare Scadenza al Frontend**
+
+Quando token è valido in `intercept_login()`:
+
+```php
+// class-wplf-core.php - intercept_login()
+if (isset($_COOKIE['wplf_token']) && $this->validate_token($_COOKIE['wplf_token'])) {
+    // Token valido: aggiungi hook per mostrare countdown
+    add_action('login_form', array($this, 'show_token_countdown'));
+    return;
+}
+```
+
+#### **2. Calcolare Tempo Rimanente**
+
+```php
+// Nuovo metodo in class-wplf-core.php
+public function show_token_countdown() {
+    $token = isset($_COOKIE['wplf_token']) ? $_COOKIE['wplf_token'] : '';
+    
+    if (empty($token)) return;
+    
+    // Recupera dati token
+    $token_data = get_transient('wplf_token_' . $token);
+    
+    if (!$token_data) return;
+    
+    // Calcola scadenza
+    $created = $token_data['timestamp'];
+    $lifetime = get_option('wplf_token_lifetime', 5) * 60; // secondi
+    $expires = $created + $lifetime;
+    $remaining = $expires - current_time('timestamp');
+    
+    if ($remaining <= 0) {
+        // Token scaduto
+        echo '<p class="wplf-countdown expired">Token scaduto. <a href="' . wp_login_url() . '">Riprova</a></p>';
+        return;
+    }
+    
+    // HTML countdown
+    ?>
+    <div class="wplf-countdown-container">
+        <p class="wplf-countdown-message">
+            🔐 Verifica completata. Token valido per: 
+            <strong id="wplf-countdown"><?php echo $this->format_countdown($remaining); ?></strong>
+        </p>
+    </div>
+    
+    <script>
+    (function() {
+        var expiresAt = <?php echo $expires; ?>;
+        var countdownEl = document.getElementById('wplf-countdown');
+        
+        function updateCountdown() {
+            var now = Math.floor(Date.now() / 1000);
+            var remaining = expiresAt - now;
+            
+            if (remaining <= 0) {
+                countdownEl.parentElement.innerHTML = '⚠️ Token scaduto. <a href="<?php echo wp_login_url(); ?>">Clicca qui per ripetere la verifica</a>';
+                return;
+            }
+            
+            var minutes = Math.floor(remaining / 60);
+            var seconds = remaining % 60;
+            
+            countdownEl.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            
+            setTimeout(updateCountdown, 1000);
+        }
+        
+        updateCountdown();
+    })();
+    </script>
+    
+    <style>
+    .wplf-countdown-container {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .wplf-countdown-message {
+        margin: 0;
+        color: #155724;
+        font-size: 14px;
+    }
+    #wplf-countdown {
+        color: #0a3622;
+        font-size: 16px;
+        font-family: monospace;
+    }
+    .wplf-countdown.expired {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 4px;
+        text-align: center;
+    }
+    </style>
+    <?php
+}
+```
+
+#### **3. Helper per Formattazione**
+
+```php
+private function format_countdown($seconds) {
+    $minutes = floor($seconds / 60);
+    $secs = $seconds % 60;
+    return sprintf('%d:%02d', $minutes, $secs);
+}
+```
+
+### 🎨 UI Proposta
+
+```
+┌──────────────────────────────────────┐
+│  🔐 Verifica completata.             │
+│  Token valido per: 4:32              │
+└──────────────────────────────────────┘
+
+[Username field]
+[Password field]
+[Login button]
+```
+
+Se scade mentre l'utente è nella pagina:
+
+```
+┌──────────────────────────────────────┐
+│  ⚠️ Token scaduto.                   │
+│  Clicca qui per ripetere la verifica │
+└──────────────────────────────────────┘
+```
+
+### ⚙️ Problemi da Gestire
+
+1. **Sync timestamp server/client**: 
+   - Uso `current_time('timestamp')` server-side
+   - Calcolo `Date.now() / 1000` client-side
+   - Potrebbe esserci discrepanza di qualche secondo
+
+2. **Token già validato**:
+   - `validate_token()` elimina il transient dopo uso
+   - Dobbiamo **NON eliminare** se solo mostriamo countdown
+   - Modificare logica: validare ma non eliminare subito
+
+3. **Scadenza durante compilazione form**:
+   - Countdown arriva a 0:00
+   - Form submit fallirà (token eliminato)
+   - Serve messaggio chiaro + link per rifare verifica
+
+### 🔧 Modifiche Necessarie
+
+**File da modificare:**
+1. `class-wplf-core.php`:
+   - Aggiungere hook `login_form`
+   - Metodo `show_token_countdown()`
+   - Metodo `format_countdown()`
+   - Modificare `validate_token()` per non eliminare subito
+
+**Linee di codice stimate:** ~80-100 linee
+
+**Tempo sviluppo:** 15-20 minuti
+
+**Rischi:** 
+- BASSO: countdown puramente visuale
+- BASSO: se fallisce, login funziona comunque
+- MEDIO: timing server/client potrebbe essere impreciso di 1-2 secondi
+
+---
+
+## 🤷 Vuoi che proceda?
+
+Pro:
+- ✅ UX migliore (utente sa quanto tempo ha)
+- ✅ Riduce frustrazione (sa se deve affrettarsi)
+- ✅ Professionale
+
+Contro:
+- ❌ Complessità media
+- ❌ Possibile confusione se countdown impreciso
+- ❌ Più codice da mantenere
+
+**Alternativa semplice:** Mostrare solo messaggio statico "Token valido per 5 minuti" senza countdown dinamico.
+
+Cosa preferisci?
+
+---
+
+_**User (2025-12-01 07:24Z)**_
+
+Se mostrassimo solo il messaggio statico e inserissimo un JS che fa il countodown prelevando l'informazione dal messaggio statico e alla fine del countdown modifica il messaggio in Token Scaduto devi rifare la verifica? sarebbe meno complesso? Rispondi senza intervenire
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 💡 Risposta: SÌ, Molto Più Semplice!
+
+### ✅ Vantaggi Approccio "Messaggio Statico + JS Parse"
+
+**COMPLESSITÀ: BASSA** (3/10) invece di MEDIA (6/10)
+
+**Perché è più semplice:**
+
+1. **Nessuna modifica a `validate_token()`**
+   - Può continuare a eliminare il transient immediatamente
+   - Zero rischi di side effects
+   - Logica esistente intatta
+
+2. **Nessun calcolo server-side complesso**
+   - Basta stampare: `"Token valido per 5 minuti"` (valore statico da opzione)
+   - Nessun recupero transient
+   - Nessun calcolo timestamp
+
+3. **JavaScript autosufficiente**
+   - Legge numero minuti dal testo: `/(\d+) minut/`
+   - Avvia countdown da quel valore
+   - Nessuna comunicazione server-client
+   - Nessun problema di timezone/sync
+
+4. **Meno codice**
+   - ~40 linee invece di ~100
+   - Solo HTML statico + 20 righe JS
+   - Nessuna logica PHP aggiuntiva
+
+### 🎯 Implementazione Semplificata
+
+```php
+// In intercept_login() quando token valido
+add_action('login_form', array($this, 'show_token_message'));
+```
+
+```php
+public function show_token_message() {
+    $token_lifetime = get_option('wplf_token_lifetime', 5);
+    ?>
+    <div class="wplf-token-notice">
+        <p id="wplf-token-message">
+            🔐 Verifica completata. Token valido per <strong><?php echo $token_lifetime; ?> minuti</strong>
+        </p>
+    </div>
+    
+    <script>
+    (function() {
+        var msg = document.getElementById('wplf-token-message');
+        var match = msg.textContent.match(/(\d+) minut/);
+        if (!match) return;
+        
+        var totalSeconds = parseInt(match[1]) * 60;
+        var remaining = totalSeconds;
+        
+        function update() {
+            if (remaining <= 0) {
+                msg.innerHTML = '⚠️ Token scaduto. <a href="<?php echo wp_login_url(); ?>">Ripeti verifica</a>';
+                return;
+            }
+            
+            var min = Math.floor(remaining / 60);
+            var sec = remaining % 60;
+            msg.innerHTML = '🔐 Verifica completata. Token valido per: <strong>' + min + ':' + (sec < 10 ? '0' : '') + sec + '</strong>';
+            
+            remaining--;
+            setTimeout(update, 1000);
+        }
+        
+        update();
+    })();
+    </script>
+    <style>
+    .wplf-token-notice { /* ... */ }
+    </style>
+    <?php
+}
+```
+
+### ⚠️ Unico Problema
+
+**Timing impreciso:**
+- Cookie potrebbe scadere a 4:58 invece di 5:00
+- Perché il countdown parte DA ADESSO (quando utente arriva al form)
+- Non dal momento reale di creazione token
+
+**Ma è accettabile perché:**
+- Margine errore: max 5-10 secondi (tempo redirect + caricamento pagina)
+- Se token scade mentre countdown dice "0:30", WordPress darà errore login
+- L'utente vede messaggio di scadenza e riprova
+- Non è critico: è solo un indicatore visuale
+
+### 📊 Confronto Approcci
+
+| Aspetto | Server Timestamp | Parse Statico |
+|---------|------------------|---------------|
+| Complessità | 6/10 | 3/10 |
+| Linee codice | ~100 | ~40 |
+| Precisione | Esatta | ±10 sec |
+| Rischi | Medio | Basso |
+| Modifiche validate_token | Sì | No |
+| Sync server/client | Problema | Non serve |
+| Manutenzione | Media | Bassa |
+
+### ✅ Raccomandazione
+
+**Usa l'approccio parse statico** perché:
+- ✅ Molto più semplice
+- ✅ Nessun side effect
+- ✅ Imprecisione tollerabile (max 10 sec su 5 minuti = 3%)
+- ✅ Codice più pulito e manutenibile
+- ✅ Zero rischi architetturali
+
+L'unica differenza visibile all'utente è che potrebbe vedere countdown arrivare a 0:05 e poi ricevere errore "token scaduto", ma succede raramente e non è un problema critico.
+
+**Vuoi procedere con questo approccio semplificato?** ✨
 
 ---
 
