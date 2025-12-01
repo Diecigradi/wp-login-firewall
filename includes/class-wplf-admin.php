@@ -739,6 +739,26 @@ class WPLF_Admin {
                         
                         <tr>
                             <th scope="row">
+                                <label>Scadenza Token</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        Il token scade dopo
+                                        <input type="number" name="token_lifetime" 
+                                               value="<?php echo esc_attr($settings['token_lifetime']); ?>" 
+                                               min="1" max="60" style="width: 80px;">
+                                        minuti
+                                    </label>
+                                    <p class="description">
+                                        Tempo di validità del token di verifica. Dopo questo periodo l'utente dovrà reinserire lo username. <strong>Default: 5 minuti</strong>
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
                                 <label>Whitelist Amministratori</label>
                             </th>
                             <td>
@@ -806,6 +826,7 @@ class WPLF_Admin {
                 $('input[name="ip_block_threshold"]').val(10);
                 $('input[name="ip_block_duration"]').val(24);
                 $('input[name="log_retention_days"]').val(30);
+                $('input[name="token_lifetime"]').val(5);
                 $('input[name="admin_whitelist"]').prop('checked', true);
                 
                 $('#wplf-settings-form').submit();
@@ -825,6 +846,7 @@ class WPLF_Admin {
             'ip_block_threshold' => get_option('wplf_ip_block_threshold', 10),
             'ip_block_duration' => get_option('wplf_ip_block_duration', 24),
             'log_retention_days' => get_option('wplf_log_retention_days', 30),
+            'token_lifetime' => get_option('wplf_token_lifetime', 5),
             'admin_whitelist' => get_option('wplf_admin_whitelist', 1)
         );
     }
@@ -871,6 +893,13 @@ class WPLF_Admin {
             wp_send_json_error('Retention log deve essere tra 7 e 365 giorni');
         }
         update_option('wplf_log_retention_days', $log_retention_days);
+        
+        // Token lifetime (1-60 minuti)
+        $token_lifetime = absint($settings['token_lifetime']);
+        if ($token_lifetime < 1 || $token_lifetime > 60) {
+            wp_send_json_error('Scadenza token deve essere tra 1 e 60 minuti');
+        }
+        update_option('wplf_token_lifetime', $token_lifetime);
         
         // Admin whitelist (checkbox: 1 o 0)
         $admin_whitelist = isset($settings['admin_whitelist']) ? 1 : 0;

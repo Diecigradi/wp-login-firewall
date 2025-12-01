@@ -189,19 +189,22 @@ class WPLF_Core {
             // Genera token sicuro con random_bytes (crittograficamente sicuro)
             $token = bin2hex(random_bytes(32));
             
-            // Salva il token come transient (5 minuti)
+            // Ottiene scadenza token configurabile (default: 5 minuti)
+            $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+            
+            // Salva il token come transient
             set_transient('wplf_token_' . $token, array(
                 'user_id' => $user->ID,
                 'username' => $username,
                 'timestamp' => current_time('timestamp')
-            ), 5 * MINUTE_IN_SECONDS);
+            ), $token_lifetime);
             
             // Imposta cookie sicuro invece di passare token in URL
             setcookie(
                 'wplf_token',
                 $token,
                 array(
-                    'expires' => time() + (5 * 60), // 5 minuti
+                    'expires' => time() + $token_lifetime,
                     'path' => COOKIEPATH,
                     'domain' => COOKIE_DOMAIN,
                     'secure' => is_ssl(), // Solo HTTPS se disponibile
@@ -271,19 +274,22 @@ class WPLF_Core {
         // Genera token sicuro con random_bytes (crittograficamente sicuro)
         $token = bin2hex(random_bytes(32));
         
-        // Salva il token come transient (5 minuti)
+        // Ottiene scadenza token configurabile (default: 5 minuti)
+        $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+        
+        // Salva il token come transient
         set_transient('wplf_token_' . $token, array(
             'user_id' => $user->ID,
             'username' => $username,
             'timestamp' => current_time('timestamp')
-        ), 5 * MINUTE_IN_SECONDS);
+        ), $token_lifetime);
         
         // Imposta cookie sicuro invece di passare token in URL
         setcookie(
             'wplf_token',
             $token,
             array(
-                'expires' => time() + (5 * 60), // 5 minuti
+                'expires' => time() + $token_lifetime,
                 'path' => COOKIEPATH,
                 'domain' => COOKIE_DOMAIN,
                 'secure' => is_ssl(), // Solo HTTPS se disponibile
