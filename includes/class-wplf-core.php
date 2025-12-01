@@ -196,8 +196,10 @@ class WPLF_Core {
         // Verifica se l'IP è bloccato
         if ($this->ip_blocker->is_blocked()) {
             $this->logger->log_attempt('', 'blocked', 'Tentativo AJAX da IP bloccato');
-            $time_remaining = $this->ip_blocker->get_formatted_time_remaining();
-            wp_send_json_error('Il tuo IP è stato bloccato. Riprova tra ' . $time_remaining);
+            wp_send_json_error(array(
+                'message' => 'IP bloccato',
+                'blocked' => true
+            ));
         }
         
         // Verifica nonce
@@ -244,8 +246,10 @@ class WPLF_Core {
                 
                 // Verifica se bloccare IP anche per rate limit verifica username
                 if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
-                    wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
-                        get_option('wplf_ip_block_duration', 72) . ' ore.');
+                    wp_send_json_error(array(
+                        'message' => 'IP bloccato per troppi tentativi',
+                        'blocked' => true
+                    ));
                 }
                 
                 wp_send_json_error('Troppi tentativi di verifica. Riprova tra ' . $minutes_remaining . ' minut' . ($minutes_remaining == 1 ? 'o' : 'i'));
@@ -326,8 +330,10 @@ class WPLF_Core {
             
             // Verifica se bloccare IP anche per rate limiting
             if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
-                wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
-                    get_option('wplf_ip_block_duration', 24) . ' ore.');
+                wp_send_json_error(array(
+                    'message' => 'IP bloccato per troppi tentativi',
+                    'blocked' => true
+                ));
             }
             
             $time_remaining = $this->rate_limiter->get_formatted_time_remaining();
@@ -351,7 +357,10 @@ class WPLF_Core {
             // Verifica se bloccare IP (conta tutti i failed + rate_limited nell'ultima ora)
             if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
                 // Messaggio generico (non rivela se username esiste)
-                wp_send_json_error('Credenziali non valide. Riprova più tardi.');
+                wp_send_json_error(array(
+                    'message' => 'IP bloccato',
+                    'blocked' => true
+                ));
             }
             
             // Messaggio generico uguale sia per user non esistente che per altri errori

@@ -37,7 +37,15 @@
                         window.location.href = response.data.redirect;
                     }, 500);
                 } else {
-                    showMessage(response.data, 'error');
+                    // Se IP bloccato, ricarica pagina per mostrare show_blocked_page()
+                    if (response.data && response.data.blocked === true) {
+                        window.location.reload();
+                        return;
+                    }
+                    
+                    // Estrae messaggio (può essere stringa o oggetto)
+                    const errorMsg = typeof response.data === 'object' ? response.data.message : response.data;
+                    showMessage(errorMsg, 'error');
                     $submit.prop('disabled', false);
                     $buttonText.show();
                     $spinner.hide();
