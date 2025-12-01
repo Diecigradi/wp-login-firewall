@@ -759,6 +759,50 @@ class WPLF_Admin {
                         
                         <tr>
                             <th scope="row">
+                                <label>Tentativi Password per Token</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="number" name="max_password_attempts" 
+                                               value="<?php echo esc_attr($settings['max_password_attempts']); ?>" 
+                                               min="3" max="20" style="width: 80px;">
+                                        tentativi
+                                    </label>
+                                    <p class="description">
+                                        Numero massimo di password sbagliate prima che il token venga invalidato. Range: 3-20. <strong>Default: 5</strong>
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Rate Limit Verifica Username</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="number" name="verify_limit_attempts" 
+                                               value="<?php echo esc_attr($settings['verify_limit_attempts']); ?>" 
+                                               min="1" max="10" style="width: 80px;">
+                                        verifiche ogni
+                                    </label>
+                                    <label>
+                                        <input type="number" name="verify_limit_minutes" 
+                                               value="<?php echo esc_attr($settings['verify_limit_minutes']); ?>" 
+                                               min="5" max="60" style="width: 80px;">
+                                        minuti
+                                    </label>
+                                    <p class="description">
+                                        Limite di richieste token per prevenire loop di verifica username. <strong>Default: 3 ogni 15 minuti</strong>
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
                                 <label>Whitelist Amministratori</label>
                             </th>
                             <td>
@@ -770,6 +814,24 @@ class WPLF_Admin {
                                     </label>
                                     <p class="description">
                                         Se abilitato, gli amministratori bypassano sempre rate limiting e blocchi IP. <strong>Disabilitare solo se si è certi di ricordare le credenziali di accesso.</strong>
+                                    </p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label>Modalità Debug</label>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="checkbox" name="debug_mode" value="1" 
+                                               <?php checked($settings['debug_mode'], 1); ?>>
+                                        Abilita log di debug nella pagina di verifica
+                                    </label>
+                                    <p class="description">
+                                        Se abilitato, mostra un pannello debug nella pagina di verifica con log in tempo reale degli accessi, token e redirect. <strong>Disabilitare in produzione.</strong>
                                     </p>
                                 </fieldset>
                             </td>
@@ -827,7 +889,11 @@ class WPLF_Admin {
                 $('input[name="ip_block_duration"]').val(24);
                 $('input[name="log_retention_days"]').val(30);
                 $('input[name="token_lifetime"]').val(5);
+                $('input[name="max_password_attempts"]').val(5);
+                $('input[name="verify_limit_attempts"]').val(3);
+                $('input[name="verify_limit_minutes"]').val(15);
                 $('input[name="admin_whitelist"]').prop('checked', true);
+                $('input[name="debug_mode"]').prop('checked', false);
                 
                 $('#wplf-settings-form').submit();
             });
@@ -847,7 +913,11 @@ class WPLF_Admin {
             'ip_block_duration' => get_option('wplf_ip_block_duration', 24),
             'log_retention_days' => get_option('wplf_log_retention_days', 30),
             'token_lifetime' => get_option('wplf_token_lifetime', 5),
-            'admin_whitelist' => get_option('wplf_admin_whitelist', 1)
+            'max_password_attempts' => get_option('wplf_max_password_attempts', 5),
+            'verify_limit_attempts' => get_option('wplf_verify_limit_attempts', 3),
+            'verify_limit_minutes' => get_option('wplf_verify_limit_minutes', 15),
+            'admin_whitelist' => get_option('wplf_admin_whitelist', 1),
+            'debug_mode' => get_option('wplf_debug_mode', 0)
         );
     }
     
@@ -901,9 +971,34 @@ class WPLF_Admin {
         }
         update_option('wplf_token_lifetime', $token_lifetime);
         
+        // Max password attempts (3-20)
+        $max_password_attempts = absint($settings['max_password_attempts']);
+        if ($max_password_attempts < 3 || $max_password_attempts > 20) {
+            wp_send_json_error('Tentativi password deve essere tra 3 e 20');
+        }
+        update_option('wplf_max_password_attempts', $max_password_attempts);
+        
+        // Verify limit attempts (1-10)
+        $verify_limit_attempts = absint($settings['verify_limit_attempts']);
+        if ($verify_limit_attempts < 1 || $verify_limit_attempts > 10) {
+            wp_send_json_error('Tentativi verifica deve essere tra 1 e 10');
+        }
+        update_option('wplf_verify_limit_attempts', $verify_limit_attempts);
+        
+        // Verify limit minutes (5-60)
+        $verify_limit_minutes = absint($settings['verify_limit_minutes']);
+        if ($verify_limit_minutes < 5 || $verify_limit_minutes > 60) {
+            wp_send_json_error('Minuti verifica deve essere tra 5 e 60');
+        }
+        update_option('wplf_verify_limit_minutes', $verify_limit_minutes);
+        
         // Admin whitelist (checkbox: 1 o 0)
         $admin_whitelist = isset($settings['admin_whitelist']) ? 1 : 0;
         update_option('wplf_admin_whitelist', $admin_whitelist);
+        
+        // Debug mode (checkbox: 1 o 0)
+        $debug_mode = isset($settings['debug_mode']) ? 1 : 0;
+        update_option('wplf_debug_mode', $debug_mode);
         
         wp_send_json_success();
     }

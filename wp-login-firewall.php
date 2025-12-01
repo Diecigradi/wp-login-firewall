@@ -26,6 +26,9 @@ define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
 // Carica la classe database
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-database.php';
 
+// Carica la classe debug
+require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-debug.php';
+
 // Carica la classe principale
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-core.php';
 
@@ -36,6 +39,11 @@ if (is_admin()) {
 
 // Inizializza il plugin
 function wplf_init() {
+    // Inizializza debug se abilitato
+    if (get_option('wplf_debug_mode', 0)) {
+        WPLF_Debug::get_instance();
+    }
+    
     new WPLF_Core();
     
     if (is_admin()) {

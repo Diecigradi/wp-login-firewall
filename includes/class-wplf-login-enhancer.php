@@ -32,27 +32,76 @@ class WPLF_Login_Enhancer {
             return;
         }
         
-        // Ottiene il lifetime configurato
-        $token_lifetime = get_option('wplf_token_lifetime', 5);
+        $token = sanitize_text_field($_COOKIE['wplf_token']);
+        
+        // Recupera i dati del token dal transient
+        $token_data = get_transient('wplf_token_' . $token);
+        
+        if (!$token_data || !isset($token_data['timestamp'])) {
+            return;
+        }
+        
+        // Calcola il tempo rimanente effettivo
+        $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+        $elapsed = current_time('timestamp') - $token_data['timestamp'];
+        $remaining_seconds = $token_lifetime - $elapsed;
+        
+        // Se è già scaduto, non mostrare nulla
+        if ($remaining_seconds <= 0) {
+            return;
+        }
+        
+        $remaining_minutes = ceil($remaining_seconds / 60);
+        
+        // Leggi tentativi falliti e massimo consentito
+        $failed_attempts = isset($token_data['failed_attempts']) ? intval($token_data['failed_attempts']) : 0;
+        $max_attempts = isset($token_data['max_attempts']) ? intval($token_data['max_attempts']) : 5;
+        $remaining_attempts = $max_attempts - $failed_attempts;
+        
+        // Verifica se c'è un errore di token bruciato
+        $token_burned = isset($_GET['wplf_error']) && $_GET['wplf_error'] === 'token_burned';
         
         ?>
         <div class="wplf-token-notice">
-            <p id="wplf-token-message">
-                Verifica completata. Hai <strong><?php echo esc_html($token_lifetime); ?> minuti</strong>
+            <p id="wplf-token-message" data-remaining="<?php echo esc_attr($remaining_seconds); ?>">
+                Verifica completata. Hai <strong><?php echo esc_html($remaining_minutes); ?> minut<?php echo $remaining_minutes == 1 ? 'o' : 'i'; ?></strong> rimanent<?php echo $remaining_minutes == 1 ? 'e' : 'i'; ?>.
             </p>
         </div>
+        
+        <?php if ($token_burned): ?>
+            <div class="wplf-attempts-notice wplf-attempts-error">
+                <p>
+                    ❌ <strong>Troppi tentativi errati.</strong> Il tuo codice di verifica è stato invalidato.<br>
+                    <a href="<?php echo esc_url(wp_login_url()); ?>">Clicca qui per richiedere un nuovo codice</a>
+                </p>
+            </div>
+        <?php elseif ($failed_attempts > 0): ?>
+            <div class="wplf-attempts-notice <?php echo $remaining_attempts <= 2 ? 'wplf-attempts-critical' : 'wplf-attempts-warning'; ?>">
+                <p>
+                    ⚠️ <strong>Password errata.</strong> Tentativi rimanenti: <strong><?php echo esc_html($remaining_attempts); ?>/<?php echo esc_html($max_attempts); ?></strong>
+                </p>
+                <?php if ($remaining_attempts <= 2): ?>
+                    <p class="wplf-attempts-hint">
+                        💡 Attenzione: se sbagli di nuovo dovrai richiedere un nuovo codice di verifica.<br>
+                        <a href="<?php echo esc_url(wp_lostpassword_url()); ?>">Password dimenticata?</a>
+                    </p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         
         <script>
         (function() {
             var msg = document.getElementById('wplf-token-message');
             if (!msg) return;
             
-            // Estrae i minuti dal messaggio
-            var match = msg.textContent.match(/(\d+) minut/);
-            if (!match) return;
+            // Legge i secondi rimanenti dal data attribute
+            var remaining = parseInt(msg.getAttribute('data-remaining'));
             
-            var totalMinutes = parseInt(match[1]);
-            var remaining = totalMinutes * 60; // Converti in secondi
+            if (isNaN(remaining) || remaining <= 0) {
+                msg.innerHTML = 'Tempo scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
+                msg.parentElement.className = 'wplf-token-notice wplf-expired';
+                return;
+            }
             
             function updateCountdown() {
                 if (remaining <= 0) {
@@ -67,10 +116,10 @@ class WPLF_Login_Enhancer {
                 // Formatta con zero padding
                 var formattedTime = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
                 
-                msg.innerHTML = 'Verifica completata. Hai <strong>' + formattedTime + '</strong> rimanenti.';
+                msg.innerHTML = 'Verifica completata. Hai <strong>' + formattedTime + '</strong> rimanent' + (remaining == 1 ? 'e' : 'i') + '.';
                 
                 // Cambia colore quando mancano meno di 60 secondi
-                if (remaining <= 30) {
+                if (remaining <= 60) {
                     msg.parentElement.className = 'wplf-token-notice wplf-warning';
                 }
                 
@@ -157,12 +206,99 @@ class WPLF_Login_Enhancer {
             color: #ffffffff;
         }
         
+        /* Box tentativi password */
+        .wplf-attempts-notice {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 3px;
+            padding: 12px 15px !important;
+            margin-bottom: 20px !important;
+            text-align: left;
+        }
+        
+        .wplf-attempts-notice p {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .wplf-attempts-notice p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .wplf-attempts-notice strong {
+            font-weight: 600;
+        }
+        
+        .wplf-attempts-notice a {
+            color: #856404;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        
+        .wplf-attempts-notice a:hover {
+            color: #533f03;
+        }
+        
+        /* Stato critico (ultimi 2 tentativi) */
+        .wplf-attempts-notice.wplf-attempts-critical {
+            background: #f8d7da;
+            border-color: #dc3545;
+            animation: pulse-critical 1.5s ease-in-out infinite;
+        }
+        
+        .wplf-attempts-notice.wplf-attempts-critical p {
+            color: #721c24;
+        }
+        
+        .wplf-attempts-notice.wplf-attempts-critical a {
+            color: #721c24;
+        }
+        
+        .wplf-attempts-notice.wplf-attempts-critical a:hover {
+            color: #491217;
+        }
+        
+        .wplf-attempts-hint {
+            font-size: 13px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Stato errore (token bruciato) */
+        .wplf-attempts-notice.wplf-attempts-error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        
+        .wplf-attempts-notice.wplf-attempts-error p {
+            color: #721c24;
+            font-size: 15px;
+        }
+        
+        .wplf-attempts-notice.wplf-attempts-error a {
+            color: #721c24;
+        }
+        
         @keyframes pulse-warning {
             0%, 100% {
                 transform: scale(1);
             }
             50% {
                 transform: scale(1.02);
+            }
+        }
+        
+        @keyframes pulse-critical {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+            50% {
+                transform: scale(1.01);
+                box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
             }
         }
         
@@ -175,6 +311,11 @@ class WPLF_Login_Enhancer {
             
             .wplf-token-notice strong {
                 font-size: 15px;
+            }
+            
+            .wplf-attempts-notice {
+                padding: 10px 12px;
+                font-size: 13px;
             }
         }
         </style>

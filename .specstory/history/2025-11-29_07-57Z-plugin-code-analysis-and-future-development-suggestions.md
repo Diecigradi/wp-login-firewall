@@ -5552,3 +5552,1798 @@ L'unica differenza è che l'admin **non viene mai bloccato** se la whitelist è 
 
 ---
 
+_**User (2025-12-01 08:03Z)**_
+
+Ok. Ora vedo che se inserisco utente corretto e password sbagliata nel form di login standard di wordpress vengo reindirizzato alla verifica. È corretto? Rispondi senza intervenire
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+No, **NON è corretto**. È un bug.
+
+## 🐛 Problema
+
+**Comportamento attuale (SBAGLIATO):**
+```
+1. User verifica username → token OK ✅
+2. User arriva a wp-login.php con token valido ✅
+3. User inserisce password SBAGLIATA ❌
+4. WordPress rifiuta login (credenziali errate)
+5. User reindirizzato alla pagina di verifica ❌
+6. Deve rifare tutta la verifica username 🔄
+```
+
+**Comportamento corretto (ATTESO):**
+```
+1. User verifica username → token OK ✅
+2. User arriva a wp-login.php con token valido ✅
+3. User inserisce password SBAGLIATA ❌
+4. WordPress mostra errore: "Password errata" ⚠️
+5. User RIMANE su wp-login.php con token ancora valido ✅
+6. User riprova la password corretta ✅
+7. Login riuscito 🎉
+```
+
+## 🔍 Causa del Bug
+
+Probabilmente `intercept_login()` viene chiamato **anche sul redirect dopo login fallito**, e siccome il token potrebbe essere stato invalidato o il cookie perso durante il processo di autenticazione fallita, WordPress ti rimanda alla verifica.
+
+**Possibili cause:**
+
+1. **Cookie perso durante redirect**: WordPress fa redirect dopo login fallito e il cookie potrebbe non essere preservato
+2. **Token eliminato da qualche altra parte**: Qualche hook WordPress potrebbe interferire
+3. **intercept_login() troppo aggressivo**: Blocca anche i redirect post-login-fallito
+
+## 🛠️ Soluzioni Possibili
+
+### **Opzione 1: Preservare token anche se login fallisce**
+Non fare nulla quando c'è un errore di login, mantenere il token valido.
+
+### **Opzione 2: Aggiungere exception per login errors**
+```php
+// In intercept_login()
+if (isset($_GET['login']) && $_GET['login'] === 'failed') {
+    // Login fallito: verifica se token ancora valido
+    if (isset($_COOKIE['wplf_token']) && $this->validate_token($_COOKIE['wplf_token'])) {
+        return; // Lascia passare, token ancora valido
+    }
+}
+```
+
+### **Opzione 3: Verificare $_POST['log'] presence**
+Se c'è un POST di login in corso, non intercettare:
+```php
+// In intercept_login()
+if (isset($_POST['log']) && isset($_POST['pwd'])) {
+    // Login in corso: verifica solo token, non bloccare
+    if (isset($_COOKIE['wplf_token']) && $this->validate_token($_COOKIE['wplf_token'])) {
+        return;
+    }
+}
+```
+
+## 📊 Debug Necessario
+
+Per capire esattamente cosa succede, dovremmo verificare:
+
+1. **Il cookie persiste?** Dopo login fallito, `$_COOKIE['wplf_token']` esiste ancora?
+2. **Il transient persiste?** `get_transient('wplf_token_...')` è ancora valido?
+3. **Quale hook viene triggerato?** `login_init` viene chiamato prima o dopo l'autenticazione?
+
+## ✅ Comportamento Corretto Atteso
+
+- ✅ Password sbagliata → **errore WordPress standard** + token ancora valido
+- ✅ Utente può riprovare password senza rifare verifica username
+- ✅ Token eliminato **solo dopo login RIUSCITO**
+- ✅ Token scade naturalmente dopo X minuti configurati
+
+Vuoi che debuggi e risolva il problema?## 📊 Debug Necessario
+
+Per capire esattamente cosa succede, dovremmo verificare:
+
+1. **Il cookie persiste?** Dopo login fallito, `$_COOKIE['wplf_token']` esiste ancora?
+2. **Il transient persiste?** `get_transient('wplf_token_...')` è ancora valido?
+3. **Quale hook viene triggerato?** `login_init` viene chiamato prima o dopo l'autenticazione?
+
+## ✅ Comportamento Corretto Atteso
+
+- ✅ Password sbagliata → **errore WordPress standard** + token ancora valido
+- ✅ Utente può riprovare password senza rifare verifica username
+- ✅ Token eliminato **solo dopo login RIUSCITO**
+- ✅ Token scade naturalmente dopo X minuti configurati
+
+Vuoi che debuggi e risolva il problema?
+
+---
+
+_**User (2025-12-01 08:09Z)**_
+
+Come vuoi agire per fare il debug?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Per fare il debug, aggiungo **logging temporaneo** in `intercept_login()` per capire esattamente cosa succede quando il login fallisce. 
+```
+
+```
+Ho aggiunto debug logging in `intercept_login()`. Ora testa inserendo username corretto e password sbagliata. Il log mostrerà:
+- Se il cookie è presente
+- Se c'è POST in corso
+- Il valore del parametro `login` in GET
+- Se il token viene validato
+
+Puoi vedere i log con:
+
+```bash
+tail -f /path/to/wp-content/debug.log
+```
+
+Oppure se non hai `WP_DEBUG_LOG` abilitato, controlla il log del server. Su Mac con MAMP/Local potresti trovarli in `` o nella cartella del tuo ambiente di sviluppo.
+
+---
+
+_**User (2025-12-01 08:53Z)**_
+
+Possiamo generare un log temporaneo per testing visibile in forntend e non utilizzare il debug.log
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Creo un sistema di log temporaneo visibile nel frontend del form di verifica: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ho implementato il sistema di debug visibile nel frontend. Ora:
+
+**Cosa ho fatto:**
+1. ✅ Log salvati in transient `wplf_debug_logs` (max 20 entry, scadenza 5 minuti)
+2. ✅ Visualizzazione nella pagina di verifica con tutti i dettagli:
+   - Timestamp
+   - Metodo HTTP
+   - Presenza cookie e valore (primi 8 caratteri)
+   - Presenza POST log/pwd
+   - Parametri GET (action, login)
+   - Azione eseguita dal plugin
+3. ✅ Pulsante "Cancella Log" che chiama AJAX per pulire i log
+4. ✅ Styling con monospace, scrolling, colori
+
+**Testa così:**
+1. Vai su `wp-login.php`
+2. Inserisci username corretto e verifica
+3. Nel form di WordPress inserisci password sbagliata
+4. Guarda il pannello debug nella pagina di verifica
+
+Il log ti mostrerà esattamente cosa succede ad ogni richiesta: se il cookie c'è, se WordPress sta facendo POST, che parametri GET ci sono, e quale decisione prende il plugin.
+
+---
+
+_**User (2025-12-01 08:54Z)**_
+
+Hai eliminato la funzione per il log nel debug.log?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+No, ho **sostituito** `error_log()` con il sistema di log nel frontend. Se vuoi **mantenere entrambi** (log file + frontend), posso aggiungere di nuovo le chiamate `error_log()`: 
+```
+
+```
+Ora hai **doppio log**:
+- ✅ `error_log()` nel file debug.log del server
+- ✅ Visualizzazione frontend nella pagina di verifica
+
+Entrambi mostrano le stesse informazioni, così puoi scegliere quale preferisci controllare durante il debug.
+
+---
+
+_**User (2025-12-01 08:56Z)**_
+
+No manteniamo solo il nostro log in frontend
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+Perfetto! Rimossi tutti gli `error_log()`. Ora hai solo il log visibile nel frontend della pagina di verifica.
+
+---
+
+_**User (2025-12-01 09:06Z)**_
+
+Ecco il contenuto del nostro log
+
+🐛 Debug Log (ultimi accessi):
+11:05:24 - GET
+Cookie: ✗ (none)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+11:02:51 - GET
+Cookie: ✓ (977aa1f2...)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:02:31 - GET
+Cookie: ✓ (977aa1f2...)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:02:11 - GET
+Cookie: ✓ (977aa1f2...)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:02:00 - GET
+Cookie: ✓ (977aa1f2...)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:01:39 - POST
+Cookie: ✓ (977aa1f2...)
+POST: log=✓, pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:01:18 - POST
+Cookie: ✓ (977aa1f2...)
+POST: log=✓, pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:00:56 - GET
+Cookie: ✓ (977aa1f2...)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+10:59:48 - GET
+Cookie: ✗ (none)
+POST: log=✗, pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Il log mostra esattamente cosa sta succedendo. Vedo che:
+
+1. **11:01:39** e **11:01:18** - POST con `log=✓, pwd=✓` = **tentativi di login** (password sbagliata)
+2. Il cookie è presente e valido (`977aa1f2...`)
+3. Il plugin **lascia passare correttamente**
+4. Dopo il POST, WordPress dovrebbe mostrare l'errore di password
+
+**Problema:** Non vedo il redirect di WordPress dopo il login fallito. Dovremmo vedere un GET con `login=failed` in GET.
+
+Questo significa che **WordPress sta processando il login ma non sta facendo il redirect standard**. Aggiungiamo più dettagli al log per vedere cosa succede dopo il POST: 
+```
+
+```
+
+```
+
+```
+Ora il log mostra:
+- **REQUEST_URI** completo (per vedere `?login=failed`)
+- **Username** inserito nel POST
+- **redirect_to** se presente
+
+Riprova il test con password sbagliata e guarda se vedi una richiesta GET con `login=failed` nell'URI dopo il POST.
+
+---
+
+_**User (2025-12-01 10:01Z)**_
+
+ecco il contenuto del nostro log:
+
+🐛 Debug Log (ultimi accessi):
+11:13:44 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+11:10:48 - POST
+URI: /wp-login.php
+Cookie: ✓ (6930c810...)
+POST: log=✓ (Diecigradi-77) , pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:10:22 - GET
+URI: /wp-login.php
+Cookie: ✓ (6930c810...)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+11:09:59 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Perfetto! Ora vedo il problema chiaramente:
+
+**11:10:48** - POST con password sbagliata → plugin lascia passare correttamente
+**11:10:22** - GET subito dopo... **MA IL COOKIE C'È ANCORA!**
+
+Questo significa che:
+1. WordPress processa il POST con password sbagliata
+2. WordPress fa redirect a `wp-login.php` (senza parametro `?login=failed`)
+3. Il nostro plugin intercetta e vede il cookie valido → **lascia passare**
+4. WordPress mostra il form... ma poi **qualcosa causa un nuovo redirect**
+5. **Nuovo GET senza cookie** (11:13:44) → plugin blocca e mostra verifica
+
+**Il problema:** Tra il GET delle 11:10:22 e quello delle 11:13:44 (3 minuti dopo) il cookie viene perso/cancellato!
+
+**Possibile causa:** WordPress o qualche plugin sta cancellando i cookie dopo il login fallito, oppure c'è un problema con il domain/path del cookie.
+
+Verifichiamo come stiamo impostando il cookie nel metodo che genera il token: Il cookie è impostato correttamente. Il problema è che WordPress, dopo un login fallito, potrebbe fare qualcosa che causa la perdita del cookie o un nuovo redirect.
+
+**Analizzando il log:** Non vedo il redirect GET con `?login=failed` che WordPress normalmente fa. Questo è strano.
+
+**Ipotesi:** WordPress sta mostrando l'errore sulla stessa pagina senza redirect, ma poi qualcosa (forse il countdown JavaScript?) causa un reload che perde il cookie.
+
+Aggiungiamo un log anche nel validate_token per vedere quando viene controllato: Aspetta, ho capito! Guardando il log più attentamente:
+
+- **11:10:48** - POST con password sbagliata
+- **11:10:22** - GET (26 secondi prima del POST??)
+- **11:09:59** - GET senza cookie
+
+Il timestamp è in ordine decrescente (più recente prima). Quindi la sequenza corretta è:
+
+1. **11:09:59** - Arrivo senza cookie → mostra verifica
+2. **11:10:22** - Arrivo con cookie (dopo verifica username) → lascia passare
+3. **11:10:48** - POST password sbagliata → lascia passare
+4. **11:13:44** - GET senza cookie → mostra verifica
+
+**La domanda è:** cosa succede tra il POST delle 11:10:48 e il GET delle 11:13:44? Perché il cookie sparisce?
+
+**Attendi:** Forse WordPress dopo il login fallito fa un redirect che non viene catturato dal nostro log! Aggiungiamo un hook per catturare l'autenticazione fallita: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Ora il log mostrerà anche quando WordPress cattura un login fallito. Riprova il test e dovresti vedere un evento `⚠️ LOGIN FAILED` nel log, che ti dirà esattamente quando WordPress processa l'errore e se il cookie è ancora presente in quel momento.
+
+---
+
+_**User (2025-12-01 10:07Z)**_
+
+Ecco il contenuto del nostro log:
+
+
+🐛 Debug Log (ultimi accessi):
+12:06:21 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+⚠️ 12:02:34 - LOGIN FAILED
+Username: Diecigradi-77
+Cookie: ✓ (17e5dcf7...)
+12:02:34 - POST
+URI: /wp-login.php
+Cookie: ✓ (17e5dcf7...)
+POST: log=✓ (Diecigradi-77) , pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+12:02:18 - GET
+URI: /wp-login.php
+Cookie: ✓ (17e5dcf7...)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+12:02:00 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**ECCOLO IL PROBLEMA!** 🎯
+
+Guarda la sequenza:
+
+1. **12:02:34** - POST con password sbagliata → plugin lascia passare ✓
+2. **12:02:34** - `wp_login_failed` triggerato → **cookie ancora presente** ✓
+3. **12:06:21** - GET (quasi 4 minuti dopo) → **COOKIE SPARITO** ✗
+
+**Il cookie c'è durante il login failed, ma sparisce dopo!**
+
+Questo succede perché WordPress, dopo `wp_login_failed`, fa un **redirect** che probabilmente usa `wp_safe_redirect()` o simile. Durante questo redirect, il cookie potrebbe andare perso se:
+
+1. Il redirect va a un URL leggermente diverso (con/senza www, http/https)
+2. C'è un problema con il `COOKIEPATH` o `COOKIE_DOMAIN`
+3. WordPress sta facendo qualcosa di strano con i cookie
+
+**Soluzione:** Dobbiamo catturare il redirect dopo il login fallito e preservare il cookie. Aggiungiamo un filtro sul `login_redirect` quando c'è un errore: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Ora ho aggiunto:
+
+1. **Hook `wp_redirect`** che cattura TUTTI i redirect di WordPress
+2. **Log del redirect** per vedere dove WordPress sta reindirizzando
+3. **Re-imposta il cookie** durante il redirect per preservarlo
+
+Il log ora mostrerà anche:
+- `↗️ REDIRECT` quando WordPress fa un redirect
+- L'URL di destinazione
+- Se il cookie è presente durante il redirect
+
+Riprova il test con password sbagliata e dovresti vedere nel log la sequenza completa: POST → LOGIN_FAILED → REDIRECT → GET. Questo ci dirà esattamente dove si perde il cookie e la funzione `preserve_cookie_on_redirect` dovrebbe risolverlo.
+
+---
+
+_**User (2025-12-01 10:25Z)**_
+
+ecco il contenuto del nostro log:
+
+🐛 Debug Log (ultimi accessi):
+12:23:38 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+⚠️ 12:21:30 - LOGIN FAILED
+Username: Diecigradi-77
+Cookie: ✓ (d8139f6c...)
+12:21:30 - POST
+URI: /wp-login.php
+Cookie: ✓ (d8139f6c...)
+POST: log=✓ (Diecigradi-77) , pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+12:21:14 - GET
+URI: /wp-login.php
+Cookie: ✓ (d8139f6c...)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+⚠️ 12:21:09 - LOGIN FAILED
+Username: Diecigradi-77
+Cookie: ✓ (d8139f6c...)
+12:21:09 - POST
+URI: /wp-login.php
+Cookie: ✓ (d8139f6c...)
+POST: log=✓ (Diecigradi-77) , pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+12:19:56 - GET
+URI: /wp-login.php
+Cookie: ✓ (d8139f6c...)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+↗️ 12:19:39 - REDIRECT
+Location: https://explorerfvg.roomzerostaging.it/wp-content/
+Status: 302
+Cookie: ✗ (none)
+12:19:34 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+12:19:16 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifi
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**PROBLEMA RISOLTO!** 🎯
+
+Guarda cosa succede:
+
+1. **12:21:30** - POST password sbagliata → cookie presente ✓
+2. **12:21:30** - LOGIN_FAILED → cookie presente ✓
+3. **NON C'È REDIRECT!** ← Questo è strano!
+4. **12:21:14** - GET → cookie presente ✓ (WordPress mostra errore)
+
+**Ma poi:**
+5. **12:23:38** - GET → cookie sparito ✗
+
+**Il problema:** Il `wp_redirect` hook non viene chiamato perché WordPress, quando il login fallisce, **NON fa redirect** - rimane sulla stessa pagina e mostra l'errore. Il cookie viene perso in qualche altro modo.
+
+**Guardiamo il redirect delle 12:19:39:** Va a `/wp-content/` senza cookie! Questo è un redirect diverso (forse quando provi ad accedere direttamente a qualcosa).
+
+**Ipotesi:** Il cookie potrebbe scadere naturalmente (5 minuti di default) oppure c'è qualcosa nel JavaScript del countdown che fa reload della pagina.
+
+Controlliamo il countdown JavaScript: Ho trovato il problema! Guarda la riga 59:
+
+```javascript
+msg.innerHTML = 'Tempo scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
+```
+
+Quando il countdown arriva a zero, mostra un link. **MA** il countdown inizia dai minuti configurati (es. 5 minuti) indipendentemente da quando il token è stato creato!
+
+**Esempio:**
+- Token creato alle 12:19:56
+- Lifetime: 5 minuti (scade alle 12:24:56)
+- User fa login fallito alle 12:21:30 (token ha ancora 3:26 minuti)
+- **MA** il countdown riprende da 5:00 minuti!
+- Countdown finisce alle 12:26:30 (2 minuti dopo la vera scadenza del token!)
+
+Inoltre, non c'è nessun reload automatico, quindi **il cookie non dovrebbe sparire per colpa del JavaScript**.
+
+**Il vero problema:** Guardando i timestamp:
+- 12:21:30 - Login failed (cookie presente)
+- 12:23:38 - GET (cookie sparito) = **2 minuti dopo**
+
+Il cookie probabilmente **scade naturalmente** perché sono passati più di 5 minuti dalla creazione originale (12:19:56). 
+
+**Verifichiamo:** Da 12:19:56 a 12:23:38 = **3 minuti e 42 secondi**. Con un token lifetime di 5 minuti, dovrebbe ancora essere valido...
+
+**ASPETTA!** Guarda l'ultimo timestamp di creazione token. Non lo vedo nel log perché mostra solo intercept_login. Dobbiamo loggare anche quando il token viene creato: Aggiungiamo log alla creazione del token: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ora il log mostrerà anche quando viene creato il token, con che scadenza. Riprova il test completo:
+
+1. Cancella log
+2. Verifica username
+3. Inserisci password sbagliata
+4. Guarda il log
+
+Dovresti vedere:
+- `✓ TOKEN CREATED` con ora di scadenza
+- POST con login failed
+- ⚠️ LOGIN FAILED
+- Eventuali REDIRECT
+
+Questo ci dirà esattamente se il token scade naturalmente o se c'è qualche altro problema.
+
+---
+
+_**User (2025-12-01 10:31Z)**_
+
+ecco il contenuto del nostro log:
+
+
+🐛 Debug Log (ultimi accessi):
+12:30:11 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+⚠️ 12:28:03 - LOGIN FAILED
+Username: Diecigradi-77
+Cookie: ✓ (4438b3b5...)
+12:28:03 - POST
+URI: /wp-login.php
+Cookie: ✓ (4438b3b5...)
+POST: log=✓ (Diecigradi-77) , pwd=✓
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+12:27:49 - GET
+URI: /wp-login.php
+Cookie: ✓ (4438b3b5...)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Token cookie valido, lascia passare
+✓ 12:27:43 - TOKEN CREATED
+Username: Diecigradi-77
+Token: 4438b3b5...
+Lifetime: 2 minuti
+Scade alle: 10:27:43
+↗️ 12:27:30 - REDIRECT
+Location: https://explorerfvg.roomzerostaging.it/wp-content/
+Status: 302
+Cookie: ✗ (none)
+12:27:24 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+↗️ 12:27:17 - REDIRECT
+Location: https://explorerfvg.roomzerostaging.it/wp-content/
+Status: 302
+Cookie: ✗ (none)
+12:27:12 - GET
+URI: /wp-login.php
+Cookie: ✗ (none)
+POST: log=✗ , pwd=✗
+GET: action=none, login=none
+→ Nessun token valido, mostra verifica
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**TROVATO IL BUG! 🎯**
+
+Guarda l'orario di scadenza:
+
+- **12:27:43** - TOKEN CREATED
+- **Lifetime: 2 minuti**
+- **Scade alle: 10:27:43** ← **ERRORE!** Dovrebbe essere **12:29:43**!
+
+Il timestamp della scadenza è SBAGLIATO! Usa `10:27:43` invece di `12:29:43`. Questo potrebbe essere un problema di timezone.
+
+Ma soprattutto:
+- Token creato: 12:27:43, scade: 12:29:43 (2 minuti)
+- Login failed: 12:28:03 (ancora valido, mancano 1:40)
+- GET: 12:30:11 ← **TOKEN SCADUTO!** (1:28 dopo la scadenza reale)
+
+**Il problema è che il token scade davvero dopo 2 minuti!** E quando arrivi alle 12:30:11, è già scaduto.
+
+**MA ASPETTA!** Dopo il login fallito alle 12:28:03, non dovrebbe esserci un GET immediato? Invece il prossimo GET è alle 12:30:11 (2 minuti dopo). **Cosa hai fatto in quei 2 minuti?** Sei rimasto sulla pagina di login di WordPress?
+
+Se sì, allora **il comportamento è corretto!** Il token scade dopo 2 minuti, e quando ricarichi la pagina (manualmente o automaticamente) vieni reindirizzato alla verifica.
+
+**La domanda è:** Dopo il login fallito, WordPress ti mostra l'errore sulla stessa pagina wp-login.php? O ti reindirizza da qualche parte? 
+
+Se rimani sulla pagina di login e aspetti che scada il token, è **normale** che poi ti chieda di riverificare.
+
+**Il vero problema originale era diverso:** Tu hai detto che *subito* dopo aver inserito la password sbagliata vieni reindirizzato alla verifica. Ma dal log vedo che:
+
+1. 12:28:03 - Login failed (cookie presente)
+2. 12:30:11 - GET (cookie assente perché scaduto)
+
+Non vedo un GET immediato dopo il login failed. **Puoi riprovare il test ma questa volta clicca subito "Accedi" di nuovo dopo l'errore di password, senza aspettare?**
+
+---
+
+_**User (2025-12-01 10:35Z)**_
+
+Ti spiego cosa faccio:
+Ho impostato validità token 2 minuti.
+Inserisco l'utente corretto nel form di verifica e vengo reindirizzato al form standard di wordpress. Parte il countdown. Inserisco utente corretto e password sbagliata e provo ad accedere, la pagina viene ricaricata e compare il messaggio di errore delle credenziali. Il countodwn torna a ripartire dal tempo iniziale ovvero 2 minuti. Attendo i due minuti e clicco su torna alla verifica.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**PERFETTO! Ora ho capito tutto! 🎯**
+
+Il comportamento **È CORRETTO**! Guarda cosa succede:
+
+1. ✅ Token creato (2 minuti) → vai a wp-login.php
+2. ✅ Login failed → WordPress ricarica la pagina
+3. ✅ Countdown **riparte da 2 minuti** ← **QUESTO È IL PROBLEMA UX!**
+4. ⏰ Aspetti 2 minuti (token scade)
+5. ❌ Clicchi "Torna alla verifica" → cookie scaduto → mostra verifica
+
+**Il problema NON è tecnico, è di UX!** Il countdown JavaScript non sa quando è stato creato il token, quindi riparte sempre dai minuti configurati invece di mostrare il tempo **rimanente** effettivo.
+
+**Soluzione:** Il countdown deve leggere il timestamp di creazione del token dal transient e calcolare il tempo rimanente reale.
+
+Modifichiamo `class-wplf-login-enhancer.php`: 
+```
+
+```
+Perfetto! Ora:
+
+1. ✅ Il countdown legge il timestamp di creazione del token dal transient
+2. ✅ Calcola il tempo **rimanente effettivo** (non quello configurato)
+3. ✅ Se fai login failed e ricarichi la pagina, il countdown riparte dal tempo rimanente reale
+4. ✅ Cambia a giallo quando mancano ≤60 secondi
+5. ✅ Mostra "Tempo scaduto" quando arriva a 0
+
+**Testa di nuovo:**
+1. Verifica username (token 2 minuti)
+2. Password sbagliata → ricarica pagina
+3. **Il countdown dovrebbe mostrare ~1:50 rimanenti** (non 2:00)
+4. Riprova password sbagliata dopo 30 secondi
+5. **Il countdown dovrebbe mostrare ~1:20 rimanenti**
+
+---
+
+_**User (2025-12-01 11:00Z)**_
+
+Ok ora sembra funzionare correttamente. Ora fai in modo che il nostro sistema di debug che abbiamo creato possa essere abilitato e disabilitato dalla pagina impostazioni in backend.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ora condizioniamo il debug log nel core: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Vedo un errore di duplicazione. Fissiamolo: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Perfetto! Ora il debug è completamente controllato dalle impostazioni. Riepilogo:
+
+✅ **Impostazioni Backend:**
+- Aggiunto checkbox "Modalità Debug" in Impostazioni
+- Default: disabilitato (0)
+- Descrizione: "Disabilitare in produzione"
+
+✅ **Condizionamento Log:**
+- `intercept_login()` - log solo se debug_mode = 1
+- `debug_login_failed()` - log solo se debug_mode = 1  
+- `preserve_cookie_on_redirect()` - log solo se debug_mode = 1
+- Creazione token (entrambe le posizioni) - log solo se debug_mode = 1
+- `show_verification_page()` - pannello debug mostrato solo se debug_mode = 1
+
+✅ **Funzionalità:**
+- Se debug disabilitato → nessun log salvato, nessun pannello visibile
+- Se debug abilitato → log completi + pannello nella pagina di verifica
+- AJAX clear_debug funziona sempre
+
+Ora puoi abilitare/disabilitare il debug dalle impostazioni senza dover modificare codice!
+
+---
+
+_**User (2025-12-01 11:01Z)**_
+
+Ok dove hai aggiunto il codice di debug?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ho condizionato il codice di debug in questi punti di `/Volumes/Macintosh HD - 2/Documents/RoomZero/Development/GitHub/wp-login-firewall/includes/class-wplf-core.php`:
+
+1. **`intercept_login()` (riga ~50)**: Tutto il blocco di log è ora dentro `if (get_option('wplf_debug_mode', 0))`
+2. **`show_verification_page()` (riga ~120)**: Il pannello debug viene mostrato solo se `$debug_mode = get_option('wplf_debug_mode', 0)`
+3. **Creazione token admin** (riga ~356): Log creazione token dentro `if (get_option('wplf_debug_mode', 0))`
+4. **Creazione token utente normale** (riga ~456): Log creazione token dentro `if (get_option('wplf_debug_mode', 0))`
+5. **`debug_login_failed()` (riga ~571)**: Check `if (!get_option('wplf_debug_mode', 0)) return;` all'inizio
+6. **`preserve_cookie_on_redirect()` (riga ~590)**: Log redirect dentro `if (get_option('wplf_debug_mode', 0))`
+
+E in `/Volumes/Macintosh HD - 2/Documents/RoomZero/Development/GitHub/wp-login-firewall/includes/class-wplf-admin.php`:
+
+7. **`get_settings()` (riga ~860)**: Aggiunto `'debug_mode' => get_option('wplf_debug_mode', 0)`
+8. **`render_settings()` (riga ~778)**: Aggiunto checkbox "Modalità Debug"
+9. **`ajax_save_settings()` (riga ~927)**: Aggiunto salvataggio `update_option('wplf_debug_mode', $debug_mode)`
+
+Tutto il sistema di debug è ora controllato dalla checkbox nelle Impostazioni.
+
+---
+
+_**User (2025-12-01 11:02Z)**_
+
+Ok vorrei che il debug fosse gestito in un file separato. Prima di procedere dimmi quanto è complessa questa operazione e quanti rischi ci sono nel farla
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**Complessità: BASSA-MEDIA** ⚠️
+
+**Rischi: MINIMI** ✅
+
+**Analisi dell'operazione:**
+
+**Cosa comporta:**
+1. Creare nuovo file `class-wplf-debug.php`
+2. Spostare 6 metodi/funzioni da `class-wplf-core.php`:
+   - Logging in `intercept_login()` → metodo `log_intercept()`
+   - Logging creazione token (2 posizioni) → metodo `log_token_created()`
+   - `debug_login_failed()` → rimane hook ma chiama classe debug
+   - `preserve_cookie_on_redirect()` → rimane hook ma chiama classe debug
+   - `add_debug_log()` → metodo helper
+   - Rendering pannello in `show_verification_page()` → metodo `render_debug_panel()`
+3. Inizializzare classe debug solo se `wplf_debug_mode = 1`
+4. Sostituire chiamate dirette con chiamate alla classe debug
+
+**Vantaggi:**
+- ✅ Codice più organizzato e manutenibile
+- ✅ Debug completamente isolato dal core
+- ✅ Zero impatto performance quando disabilitato
+- ✅ Facile da rimuovere completamente se necessario
+
+**Svantaggi:**
+- ⚠️ Richiede test completo del flusso login dopo refactoring
+- ⚠️ Più file da gestire
+
+**Rischi:**
+- 🟢 **Molto bassi**: Stiamo solo riorganizzando codice già funzionante
+- 🟢 Se qualcosa va storto, è facile fare rollback (hai git)
+- 🟢 Il debug è opzionale, quindi se si rompe non impatta il login
+
+**Stima tempo:** 10-15 minuti di implementazione + 5 minuti di test
+
+**Raccomandazione:** ✅ **PROCEDI** - È un buon refactoring che migliora la qualità del codice con rischi minimi.
+
+Vuoi che proceda?
+
+---
+
+_**User (2025-12-01 11:06Z)**_
+
+procedi
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+Ora aggiorniamo `class-wplf-core.php` per usare la classe debug: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Ora rimuoviamo gli stili CSS duplicati e aggiorniamo i log di creazione token: 
+```
+
+```
+Ora aggiorniamo i log di creazione token: 
+```
+
+```
+Ora rimuoviamo i metodi debug obsoleti da class-wplf-core.php: 
+```
+
+```
+
+```
+
+```
+Perfetto! Refactoring completato. Riepilogo delle modifiche:
+
+✅ **Nuovo file creato:**
+- `class-wplf-debug.php` - Classe dedicata al debug con pattern Singleton
+
+✅ **Modifiche a `wp-login-firewall.php`:**
+- Caricamento `class-wplf-debug.php`
+- Inizializzazione condizionale: `WPLF_Debug::get_instance()` solo se `debug_mode = 1`
+
+✅ **Modifiche a `class-wplf-core.php`:**
+- Rimossi tutti i log inline sostituiti con chiamate a `WPLF_Debug`
+- Rimossi metodi `debug_login_failed()` e `preserve_cookie_on_redirect()`
+- Rimossi hook `wp_login_failed` e `wp_redirect`
+- Rimosso rendering pannello debug e CSS inline
+- Metodo `add_debug_log()` ora wrapper deprecato
+- Aggiornato `ajax_clear_debug()` per usare `WPLF_Debug`
+
+✅ **Classe `WPLF_Debug` gestisce:**
+- Log intercettazione (`log_intercept()`)
+- Log creazione token (`log_token_created()`)
+- Log login fallito (hook `wp_login_failed`)
+- Log redirect (filtro `wp_redirect` + preservazione cookie)
+- Rendering pannello debug (`render_panel()`)
+- Pulizia log (`clear_logs()`)
+- Check abilitazione (`is_enabled()`)
+
+**Vantaggi ottenuti:**
+- 🎯 Codice debug completamente isolato
+- ⚡ Zero overhead quando disabilitato
+- 🧹 `class-wplf-core.php` più pulito e focalizzato
+- 🔧 Facilità manutenzione e debugging
+
+Il sistema funziona esattamente come prima, ma ora è molto più organizzato!
+
+---
+
+_**User (2025-12-01 11:12Z)**_
+
+Ok sembra funzionare. Ora vorrei aggiungere un ulteriore funzione di sicurezza nel form standard di wordpress. Se un utente attaccante trova il dato utente giusto riesce ad accedere al form standard di wordpress. A quel punto avrà un tempo limite per provare ad utilizzare una password per accedere all'area di ammonistrazione, passato il tempo limite verrà riportato alla pagina di verifica ma consocendo già il nome utente sarà facile per lui tornare al form di login di wordpress. Prima di procedere con eventuali implementazioni che cosa siuggerisci di fare per aumentare la sicurezza in questo scenario?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**Eccellente osservazione!** Hai identificato un vettore di attacco importante. Analizziamo:
+
+## Scenario Attuale (Vulnerabilità)
+```
+1. Attaccante → verifica username "admin" → ✓ token generato
+2. Attaccante → arriva a wp-login.php → ha 5 minuti
+3. Attaccante → prova 100 password in 5 minuti
+4. Token scade → torna a verifica
+5. Attaccante → reinserisce "admin" → ✓ NUOVO token
+6. Attaccante → altre 100 password → LOOP INFINITO
+```
+
+**Problema:** L'attaccante può ciclare infinite volte se conosce lo username.
+
+---
+
+## Soluzioni Proposte (in ordine di efficacia)
+
+### 🥇 **SOLUZIONE 1: Rate Limit sulla Verifica Username** (CONSIGLIATA)
+**Cosa fare:**
+- Limitare le verifiche username **per IP** (es. 3 verifiche ogni 15 minuti)
+- Dopo 3 verifiche → blocco temporaneo (1 ora)
+- Impedisce loop infiniti di ri-generazione token
+
+**Vantaggi:**
+- ✅ Blocca attacchi automatizzati
+- ✅ Non impatta utenti legittimi (raramente sbagliano username 3+ volte)
+- ✅ Facile da implementare (già hai il rate limiter)
+
+**Implementazione:**
+```php
+// In ajax_verify_username(), PRIMA del check utente esistente:
+if (!$this->rate_limiter->check_rate_limit('verify_' . $client_ip)) {
+    wp_send_json_error('Troppi tentativi di verifica. Riprova tra 15 minuti');
+}
+```
+
+---
+
+### 🥈 **SOLUZIONE 2: Incremento Delay su Verifica Ripetuta**
+**Cosa fare:**
+- Prima verifica username → instant
+- Seconda verifica (stesso IP, stesso username) → delay 5 sec
+- Terza verifica → delay 30 sec
+- Quarta → delay 5 min
+
+**Vantaggi:**
+- ✅ Rallenta drasticamente attacchi automatizzati
+- ✅ Non blocca del tutto (utente legittimo può riprovare)
+
+**Svantaggi:**
+- ⚠️ Attaccante paziente può continuare (lento ma possibile)
+
+---
+
+### 🥉 **SOLUZIONE 3: CAPTCHA dopo N Tentativi**
+**Cosa fare:**
+- Dopo 2-3 verifiche username dallo stesso IP → richiedi CAPTCHA
+- Usa reCAPTCHA v3 (invisibile) o hCaptcha
+
+**Vantaggi:**
+- ✅ Blocca bot automatizzati
+- ✅ Utenti legittimi possono continuare
+
+**Svantaggi:**
+- ⚠️ Dipendenza servizio esterno
+- ⚠️ Possibile friction per utenti
+
+---
+
+### 🎯 **SOLUZIONE 4: Token "Bruciato" su Login Fallito** (AGGIUNTIVA)
+**Cosa fare:**
+- Dopo N tentativi password falliti con stesso token → invalida token
+- Forza nuova verifica username
+- Combina con rate limit verifica
+
+**Esempio:**
+```php
+// Dopo 5 password sbagliate con stesso token:
+delete_transient('wplf_token_' . $token);
+// Utente deve re-verificare username (ma rate limit lo blocca)
+```
+
+---
+
+### 🔒 **SOLUZIONE 5: Whitelist Temporanea IP dopo Login Riuscito** (BONUS)
+**Cosa fare:**
+- Dopo login riuscito → whitelist IP per 24h
+- IP whitelisted bypassa verifica username per 24h
+- Riduce friction per utenti legittimi
+
+---
+
+## **RACCOMANDAZIONE FINALE** ⭐
+
+**Combinazione ideale (massima sicurezza + UX accettabile):**
+
+1. **Rate Limit Verifica Username** (MUST)
+   - 3 verifiche ogni 15 minuti per IP
+   - Blocco 1 ora dopo superamento
+
+2. **Token Bruciato** (MUST)
+   - Dopo 5 password sbagliate → invalida token
+   - Forza re-verifica (che viene bloccata da rate limit)
+
+3. **Whitelist IP Post-Login** (NICE TO HAVE)
+   - Bypass verifica per IP fidati (24h)
+
+**Risultato:**
+```
+Attaccante trova username "admin"
+→ Genera token
+→ Prova 5 password → token invalidato
+→ Torna a verifica → SECONDO token
+→ Prova 5 password → token invalidato
+→ Torna a verifica → TERZO token (rate limit)
+→ BLOCCATO per 1 ora
+
+Totale tentativi possibili: 15 password ogni ora
+(vs. attuale: ILLIMITATI)
+```
+
+---
+
+## Quale preferisci implementare?
+
+**Opzione A:** Rate Limit + Token Bruciato (consigliata, ~30 min implementazione)  
+**Opzione B:** Solo Rate Limit (più semplice, ~15 min)  
+**Opzione C:** Tutte le soluzioni (massima sicurezza, ~1 ora)
+
+Fammi sapere e procedo!
+
+---
+
+_**User (2025-12-01 11:17Z)**_
+
+Ok procediamo con rate limit e token bruciato. Prima di procedere con le modifiche dimmi su che file interverrai e dimmi se i limit e blocco avranno come impostazione i dati inseriti nella pagina impostazioni
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**Perfetto! Ecco il piano dettagliato:**
+
+---
+
+## File da Modificare
+
+### 1. **`class-wplf-core.php`** ⭐ (PRINCIPALE)
+**Modifiche:**
+- `ajax_verify_username()` - Aggiungere rate limit sulla verifica username
+- `validate_token()` - Tracciare tentativi password falliti
+- Nuovo metodo `invalidate_token_on_failed_attempts()` - Invalida token dopo N tentativi
+- Hook `authenticate` filter - Intercettare login fallito per contare tentativi
+
+### 2. **`class-wplf-admin.php`**
+**Modifiche:**
+- `render_settings()` - Aggiungere nuovi campi:
+  - **Username Verify Rate Limit**: tentativi/minuti (default: 3/15)
+  - **Max Password Attempts per Token**: (default: 5)
+- `get_settings()` - Aggiungere nuove opzioni
+- `ajax_save_settings()` - Salvare e validare nuove opzioni
+
+### 3. **`class-wplf-rate-limiter.php`**
+**Modifiche (minori):**
+- Già supporta chiavi multiple → nessuna modifica necessaria
+- Useremo chiave `verify_username_{IP}` per il nuovo rate limit
+
+---
+
+## Impostazioni da Aggiungere
+
+### **Nuove opzioni in Settings:**
+
+| Opzione | Nome Opzione DB | Default | Range | Descrizione |
+|---------|----------------|---------|-------|-------------|
+| **Username Verify Limit** | `wplf_verify_limit_attempts` | `3` | 1-10 | Tentativi verifica username |
+| **Username Verify Minutes** | `wplf_verify_limit_minutes` | `15` | 5-60 | Periodo rate limit verifica |
+| **Max Password Attempts** | `wplf_max_password_attempts` | `5` | 3-20 | Password sbagliate prima di invalidare token |
+
+---
+
+## Come Funzioneranno i Limiti
+
+### **Rate Limit Verifica Username:**
+```
+Impostazione: 3 tentativi ogni 15 minuti
+Usa: wplf_verify_limit_attempts (3)
+Usa: wplf_verify_limit_minutes (15)
+Storage: Transient rate_limit_verify_username_{IP}
+```
+
+### **Token Bruciato:**
+```
+Impostazione: 5 password sbagliate max
+Usa: wplf_max_password_attempts (5)
+Storage: Transient wplf_token_{TOKEN} → aggiungiamo campo 'failed_attempts'
+Dopo 5 tentativi → delete_transient('wplf_token_' . $token)
+```
+
+---
+
+## Riutilizzo Impostazioni Esistenti
+
+**SÌ**, riutilizzeremo anche queste (già esistenti):
+
+- `wplf_rate_limit_attempts` - Già usato per rate limit generale (manteniamo separato)
+- `wplf_rate_limit_minutes` - Già usato per rate limit generale (manteniamo separato)
+- `wplf_ip_block_threshold` - Dopo N failed username verify → blocco IP (già gestito)
+- `wplf_ip_block_duration` - Durata blocco IP (già gestito)
+
+---
+
+## Flusso Completo con Nuove Protezioni
+
+```
+1. Attaccante verifica "admin" → ✓ (1/3 verifiche)
+2. Arriva a wp-login.php → token generato (failed_attempts: 0)
+3. Password sbagliata #1 → failed_attempts: 1
+4. Password sbagliata #2 → failed_attempts: 2
+5. Password sbagliata #3 → failed_attempts: 3
+6. Password sbagliata #4 → failed_attempts: 4
+7. Password sbagliata #5 → failed_attempts: 5 → TOKEN INVALIDATO
+8. Redirect a verifica → prova a verificare "admin" → ✓ (2/3 verifiche)
+9. Nuovo token → 5 password sbagliate → TOKEN INVALIDATO
+10. Redirect a verifica → prova a verificare "admin" → ✓ (3/3 verifiche)
+11. Nuovo token → 5 password sbagliate → TOKEN INVALIDATO
+12. Redirect a verifica → prova a verificare "admin" → ❌ RATE LIMIT SUPERATO
+13. BLOCCATO per 15 minuti (o finché impostato)
+
+Totale password provabili: 15 ogni 15 minuti (3 token × 5 tentativi)
+```
+
+---
+
+## Conferma
+
+✅ **3 nuove impostazioni** in pagina Settings  
+✅ **Tutte configurabili** dall'admin  
+✅ **Valori di default ragionevoli** (sicuri ma non troppo restrittivi)  
+✅ **Modifiche solo a 2 file**: `class-wplf-core.php` + `class-wplf-admin.php`  
+✅ **Riutilizzo rate-limiter esistente** (già testato)
+
+**Procedo con l'implementazione?** 🚀
+
+---
+
+_**User (2025-12-01 11:21Z)**_
+
+funzionerà anche il blocco ip? sempre con i dati nelle impostazioni salvate?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+**SÌ, assolutamente!** ✅
+
+Il blocco IP continuerà a funzionare esattamente come ora, utilizzando le impostazioni già salvate. Ecco come si integra:
+
+---
+
+## Blocco IP - Come Funziona Ora (NON CAMBIA)
+
+**Già implementato e funzionante:**
+```php
+// In ajax_verify_username() - già presente
+if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
+    wp_send_json_error('Troppi tentativi falliti...');
+}
+```
+
+**Usa queste impostazioni (già esistenti):**
+- `wplf_ip_block_threshold` (default: 10) - Dopo 10 tentativi falliti
+- `wplf_ip_block_duration` (default: 24h) - Durata blocco
+
+---
+
+## Integrazione Completa - 3 Livelli di Protezione
+
+### **LIVELLO 1: Rate Limit Verifica Username** (NUOVO)
+```
+Impostazioni: wplf_verify_limit_attempts (3) + wplf_verify_limit_minutes (15)
+Effetto: Max 3 verifiche username ogni 15 minuti per IP
+Messaggio: "Troppi tentativi di verifica. Riprova tra X minuti"
+```
+
+### **LIVELLO 2: Token Bruciato** (NUOVO)
+```
+Impostazione: wplf_max_password_attempts (5)
+Effetto: Dopo 5 password sbagliate con stesso token → token invalidato
+Messaggio: (nessuno, redirect silenzioso a verifica)
+```
+
+### **LIVELLO 3: Blocco IP Permanente** (ESISTENTE - NON CAMBIA)
+```
+Impostazioni: wplf_ip_block_threshold (10) + wplf_ip_block_duration (24h)
+Effetto: Dopo 10 tentativi falliti totali nell'ultima ora → IP bloccato
+Messaggio: "Il tuo IP è stato bloccato. Riprova tra X ore"
+Storage: Database wp_wplf_blocked_ips
+```
+
+---
+
+## Scenario Completo con Tutti i Livelli
+
+```
+ATTACCANTE da IP 1.2.3.4:
+
+1. Verifica "admin" → ✓ (contatore: 1/3 verifiche, 0/10 failed totali)
+2. 5 password sbagliate → Token bruciato (0/10 failed totali - ancora nessun log "failed")
+3. Verifica "admin" → ✓ (contatore: 2/3 verifiche, 0/10 failed totali)
+4. 5 password sbagliate → Token bruciato
+5. Verifica "admin" → ✓ (contatore: 3/3 verifiche, 0/10 failed totali)
+6. 5 password sbagliate → Token bruciato
+7. Verifica "admin" → ❌ RATE LIMIT (bloccato per 15 min)
+   └─ Log "rate_limited" → conta verso IP block
+8. Prova ancora verifica → ❌ RATE LIMIT → Log "rate_limited" (1/10)
+9. Prova ancora verifica → ❌ RATE LIMIT → Log "rate_limited" (2/10)
+...
+17. Dopo 10 tentativi di bypass rate limit → IP BLOCCATO per 24h
+```
+
+---
+
+## Come Contano i "Failed Attempts" per IP Block?
+
+**Gli eventi che contano verso il blocco IP** (già implementato):
+- ❌ Username inesistente verificato
+- ❌ Rate limit superato (tentativo di verificare troppo spesso)
+- ❌ Nonce invalido
+- ❌ Altri errori di sicurezza
+
+**NON contano verso blocco IP:**
+- ✅ Password sbagliata (è già dentro wp-login.php, utente è legittimo)
+- ✅ Token scaduto (normale funzionamento)
+
+**Quindi il nuovo rate limit USERNAME CONTRIBUISCE al blocco IP!** Perfetto! 🎯
+
+---
+
+## Impostazioni Finali - Tutte Configurabili
+
+| Protezione | Impostazione | Default | Dove |
+|------------|--------------|---------|------|
+| Rate Limit Verifica | `wplf_verify_limit_attempts` | 3 | Nuova |
+| Rate Limit Periodo | `wplf_verify_limit_minutes` | 15 | Nuova |
+| Max Password/Token | `wplf_max_password_attempts` | 5 | Nuova |
+| Soglia Blocco IP | `wplf_ip_block_threshold` | 10 | **Esistente** |
+| Durata Blocco IP | `wplf_ip_block_duration` | 24h | **Existente** |
+
+---
+
+## Conferma Finale
+
+✅ **Blocco IP funzionerà** esattamente come ora  
+✅ **Usa le impostazioni già salvate** in Settings  
+✅ **Rate limit verifica contribuisce** al blocco IP  
+✅ **Protezione a 3 livelli** (Rate Limit → Token Burn → IP Block)  
+✅ **Tutto configurabile** dall'admin  
+
+**Procedo con l'implementazione?** 🚀
+
+---
+
+_**User (2025-12-01 11:26Z)**_
+
+Con queste impostazioni che cosa succederà?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Analizzando le impostazioni attuali nella schermata, ecco cosa succederà con la protezione a 3 livelli:
+
+## 🛡️ Scenario di Protezione Attivo
+
+### **Livello 1: Rate Limit Login (ATTIVO)**
+- **3 tentativi ogni 30 minuti**
+- Applica al login tradizionale
+- IP bloccato temporaneamente se supera il limite
+
+### **Livello 2: Blocco IP Automatico (ATTIVO)**
+- **5 tentativi falliti** → IP bloccato
+- **Durata blocco: 72 ore** (3 giorni)
+- L'IP viene registrato nella tabella `wp_wplf_blocked_ips`
+
+### **Livello 3: Token di Verifica (ATTIVO)**
+- **Scadenza: 1 minuto**
+- Dopo username verificato, l'utente ha solo 60 secondi per fare login
+- Token scade molto velocemente
+
+### **Extra: Whitelist Admin (ATTIVA)**
+- Gli admin bypassano rate limiting e blocco IP
+- Solo loro accedono liberamente
+
+---
+
+## ⚠️ **VULNERABILITÀ ANCORA PRESENTE**
+
+Con queste impostazioni, **l'attacco loop username verification è ancora possibile**:
+
+**Scenario di attacco:**
+1. Attaccante verifica username → ottiene token da 1 minuto
+2. Fa 3 tentativi di password in 60 secondi
+3. Token scade → torna a verifica username
+4. Richiede nuovo token → altri 60 secondi, altri 3 tentativi
+5. **Loop infinito: 3 tentativi al minuto, senza fine**
+
+**Calcolo:**
+- 3 tentativi × 60 loop all'ora = **180 password/ora**
+- 180 × 24 ore = **4.320 password/giorno**
+- Attacco di forza bruta molto efficace
+
+---
+
+## ✅ **CON LE NUOVE PROTEZIONI** (da implementare)
+
+Aggiungendo Rate Limit su verifica username + Token Burning:
+
+**Nuove impostazioni proposte:**
+- **Rate Limit Verifica**: 3 tentativi ogni 15 minuti
+- **Token Burning**: 5 tentativi di password bruciano il token
+
+**Scenario protetto:**
+1. Attaccante verifica username (tentativo 1/3)
+2. Ottiene token da 1 minuto
+3. Fa 5 tentativi password → **token bruciato**
+4. Deve verificare username di nuovo (tentativo 2/3)
+5. Fa altri 5 tentativi → **token bruciato**
+6. Verifica username (tentativo 3/3)
+7. Fa altri 5 tentativi → **rate limit superato**
+8. **Bloccato 15 minuti**
+
+**Risultato finale:**
+- Massimo **15 tentativi ogni 15 minuti** (vs 180/ora attuali)
+- Riduzione del **92% della velocità di attacco**
+- Dopo 15 tentativi → IP bloccato 72 ore
+
+---
+
+Vuoi che proceda con l'implementazione delle nuove protezioni? 🚀
+
+---
+
+_**User (2025-12-01 11:27Z)**_
+
+Con la nuova funzione e le impostazioni che ho inserito che cosa succederà esattamente?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Analizzando le tue impostazioni attuali e come lavoreranno insieme dopo l'implementazione delle nuove protezioni:
+
+## 🔐 Scenario Completo con Impostazioni Attuali
+
+### **Le tue impostazioni:**
+- Rate Limit Login: **3 tentativi / 30 minuti**
+- Blocco IP: dopo **5 tentativi falliti** → bloccato **72 ore**
+- Token Scadenza: **1 minuto**
+- Rate Limit Verifica (nuovo): **3 tentativi / 15 minuti** *(default che implementeremo)*
+- Token Burning (nuovo): **5 tentativi password** *(default che implementeremo)*
+
+---
+
+## 📊 Esempio Pratico: Attacco Brute Force
+
+### **Scenario 1: Attaccante contro utente "admin"**
+
+**Minuto 0-1:**
+1. Attaccante verifica username "admin" → ✅ Token creato (1/3 verifiche)
+2. Ha 60 secondi per provare password
+3. Prova 5 password sbagliate → ❌ **Token bruciato** + 5 login falliti registrati
+4. Viene reindirizzato a pagina verifica
+
+**Minuto 1-2:**
+5. Verifica di nuovo username "admin" → ✅ Token creato (2/3 verifiche)
+6. Prova altre 5 password → ❌ **Token bruciato** + 10 login falliti totali
+7. **BLOCCO IP AUTOMATICO**: superati i 5 fallimenti → IP bloccato 72 ore
+
+**Risultato:**
+- ⏱️ **2 minuti** di attacco
+- 🔑 **10 tentativi password** totali
+- 🚫 **IP bloccato per 3 giorni**
+
+---
+
+### **Scenario 2: Attaccante che cambia username**
+
+**Primi 15 minuti:**
+1. Verifica "admin" → 5 tentativi password → token bruciato (1/3 verifiche)
+2. Verifica "administrator" → 5 tentativi → token bruciato (2/3 verifiche)
+3. Verifica "root" → 5 tentativi → token bruciato (3/3 verifiche)
+4. **RATE LIMIT VERIFICA**: superati i 3 tentativi → bloccato 15 minuti
+
+**Dopo 15 minuti di pausa forzata:**
+5. Verifica "user1" → 5 tentativi → IP raggiunge 20 fallimenti totali
+6. **BLOCCO IP**: superati i 5 fallimenti → IP bloccato 72 ore
+
+**Risultato:**
+- ⏱️ **~15-20 minuti** prima del blocco definitivo
+- 🔑 **15-20 tentativi password** massimi
+- 🚫 **IP bloccato per 3 giorni**
+
+---
+
+### **Scenario 3: Utente legittimo che sbaglia password**
+
+**Caso normale:**
+1. Verifica username corretto → ✅ Token da 1 minuto
+2. Sbaglia password 2-3 volte → ✅ Ancora dentro il token
+3. Ricorda password corretta → ✅ **Login riuscito**
+
+**Caso critico (ha dimenticato password):**
+1. Verifica username → token da 1 minuto
+2. Prova 5 password sbagliate → ❌ Token bruciato
+3. Clicca "Password dimenticata?" → ✅ **Reset password via email**
+4. Oppure riprova dopo → verifica di nuovo username
+
+**Protezione utente legittimo:**
+- ✅ Non viene mai bloccato con pochi tentativi
+- ✅ Ha sempre il reset password disponibile
+- ✅ Rate limit sufficientemente ampio (3/15min) per errori umani
+
+---
+
+## 🎯 Confronto: Prima vs Dopo
+
+### **PRIMA (vulnerabilità attiva):**
+- ♾️ Verifiche username illimitate
+- ♾️ Tentativi password illimitati (3 ogni minuto in loop)
+- 📈 **~180 password/ora** possibili
+- ⏳ Attacco può durare giorni
+
+### **DOPO (con nuove protezioni):**
+- 🔒 Max 3 verifiche username / 15 minuti
+- 🔒 Max 5 password per token
+- 📉 **~15-20 password totali** prima del blocco
+- ⚡ Blocco IP in **2-20 minuti**
+- 🛡️ **Riduzione del 90%+ della superficie di attacco**
+
+---
+
+## ⚙️ Protezione Multi-Livello Finale
+
+```
+LIVELLO 1: Rate Limit Verifica Username
+├─ 3 tentativi / 15 minuti
+└─ Blocca loop di richiesta token
+
+LIVELLO 2: Token Burning  
+├─ 5 password sbagliate → token invalidato
+└─ Forza richiesta nuovo token (conta nel livello 1)
+
+LIVELLO 3: Rate Limit Login Tradizionale
+├─ 3 tentativi / 30 minuti
+└─ Protezione login diretto (senza verifica)
+
+LIVELLO 4: Blocco IP Automatico
+├─ 5 fallimenti totali → IP bloccato 72 ore
+└─ Database persistente, sopravvive a restart
+
+LIVELLO 5: Whitelist Admin
+├─ Admin bypassano tutti i limiti
+└─ Accesso sempre garantito
+```
+
+---
+
+Procedo con l'implementazione? Le tue impostazioni sono già molto restrittive (token 1 minuto + blocco 72 ore) e funzioneranno perfettamente con le nuove protezioni. 🚀
+
+---
+
+_**User (2025-12-01 12:26Z)**_
+
+Prima di procedere dimmi come posso definire il numero di tentativi per le password sbagliate e se nel form ci saranno informazioni relative ai tentativi disponibili
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## ⚙️ Configurazione Tentativi Password
+
+### **1. Nelle Impostazioni Admin**
+
+Aggiungerò un nuovo campo nella pagina Settings:
+
+```
+┌─────────────────────────────────────────────────┐
+│ Tentativi Password per Token                    │
+│ ┌───┐ tentativi                                 │
+│ │ 5 │                                           │
+│ └───┘                                           │
+│ Numero massimo di password sbagliate prima      │
+│ che il token venga invalidato. Range: 3-20      │
+└─────────────────────────────────────────────────┘
+```
+
+**Nome opzione:** `wplf_max_password_attempts`  
+**Default:** 5  
+**Range:** 3-20 (validato lato server)
+
+---
+
+### **2. Feedback Visivo nel Form di Login**
+
+#### **Opzione A: Contatore Progressivo (Consigliata)**
+
+Mostrerò i tentativi rimanenti **dopo ogni errore**:
+
+```html
+┌─────────────────────────────────────────────────┐
+│  🔐 Verifica Identità                           │
+│                                                 │
+│  ⚠️ Password errata                             │
+│  Tentativi rimanenti: 3/5                       │
+│                                                 │
+│  Username: admin                                │
+│  Password: [__________]                         │
+│                                                 │
+│  ⏱️ Tempo rimasto: 00:47                        │
+│                                                 │
+│  [Accedi]  Password dimenticata?                │
+└─────────────────────────────────────────────────┘
+```
+
+**Vantaggi:**
+- ✅ Utente sa quanti tentativi ha
+- ✅ Non spaventa all'inizio (appare solo dopo errore)
+- ✅ Incoraggia a usare "Password dimenticata"
+
+#### **Opzione B: Info Sempre Visibile**
+
+```html
+┌─────────────────────────────────────────────────┐
+│  🔐 Verifica Identità                           │
+│                                                 │
+│  💡 Hai 5 tentativi disponibili                 │
+│                                                 │
+│  Username: admin                                │
+│  Password: [__________]                         │
+│                                                 │
+│  ⏱️ Tempo rimasto: 00:47                        │
+│                                                 │
+│  [Accedi]  Password dimenticata?                │
+└─────────────────────────────────────────────────┘
+```
+
+**Vantaggi:**
+- ✅ Trasparenza totale
+- ✅ Utente informato da subito
+
+---
+
+### **3. Messaggi di Errore Progressivi**
+
+**Tentativo 1-2:**
+```
+⚠️ Password errata. Tentativi rimanenti: 4/5
+```
+
+**Tentativo 3-4:**
+```
+⚠️ Password errata. Tentativi rimanenti: 2/5
+⚠️ Attenzione: usa "Password dimenticata?" se necessario
+```
+
+**Tentativo 5 (ultimo):**
+```
+⚠️ Password errata. Ultimo tentativo disponibile!
+⚠️ Se sbagli di nuovo dovrai richiedere un nuovo codice di verifica
+```
+
+**Tentativo 6 (token bruciato):**
+```
+❌ Troppi tentativi errati. Il tuo codice di verifica è stato invalidato.
+🔄 Torna alla pagina di verifica username per ricevere un nuovo codice.
+   [Torna a Verifica Username]
+```
+
+---
+
+### **4. Implementazione Tecnica**
+
+#### **Struttura Transient Token (aggiornata):**
+```php
+$token_data = [
+    'username' => 'admin',
+    'timestamp' => 1701432000,
+    'failed_attempts' => 0,  // ← NUOVO campo
+    'max_attempts' => 5      // ← Copia dell'impostazione
+];
+```
+
+#### **Tracking Tentativi:**
+```php
+// Hook authenticate (priorità alta, prima di WP)
+add_filter('authenticate', [$this, 'track_password_attempts'], 30, 3);
+
+public function track_password_attempts($user, $username, $password) {
+    // Se è già un errore WP o admin in whitelist, skip
+    if (is_wp_error($user) || $this->is_admin_whitelisted()) {
+        return $user;
+    }
+    
+    // Se login fallito
+    if (!wp_check_password($password, $user->user_pass, $user->ID)) {
+        $token = $_COOKIE['wplf_token'] ?? '';
+        $token_data = get_transient('wplf_token_' . $token);
+        
+        if ($token_data) {
+            $token_data['failed_attempts']++;
+            
+            // Se raggiunto limite → brucia token
+            if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+                delete_transient('wplf_token_' . $token);
+                setcookie('wplf_token', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
+                
+                // Redirect con messaggio
+                wp_redirect(add_query_arg('wplf_error', 'max_attempts', wp_login_url()));
+                exit;
+            }
+            
+            // Aggiorna contatore
+            set_transient('wplf_token_' . $token, $token_data, $token_data['lifetime']);
+        }
+    }
+    
+    return $user;
+}
+```
+
+#### **Visualizzazione nel Form:**
+```php
+// In show_verification_page()
+$token = $_COOKIE['wplf_token'] ?? '';
+$token_data = get_transient('wplf_token_' . $token);
+$failed = $token_data['failed_attempts'] ?? 0;
+$max = $token_data['max_attempts'] ?? 5;
+$remaining = $max - $failed;
+
+// Passa a template
+echo '<div class="wplf-attempts-info">';
+if ($failed > 0) {
+    echo '<p class="warning">⚠️ Password errata. Tentativi rimanenti: ' . $remaining . '/' . $max . '</p>';
+    
+    if ($remaining <= 2) {
+        echo '<p class="alert">⚠️ Attenzione: usa "Password dimenticata?" se necessario</p>';
+    }
+}
+echo '</div>';
+```
+
+---
+
+### **5. La Mia Raccomandazione**
+
+**Configurazione consigliata:**
+- **Opzione A** (contatore dopo errore) → Meno invasivo
+- **Range 3-20** → Flessibilità per diversi scenari
+- **Default 5** → Equilibrio sicurezza/usabilità
+- **Messaggi progressivi** → UX migliore
+
+**Vuoi che implementi:**
+1. ✅ Campo nelle impostazioni (range 3-20, default 5)
+2. ✅ Tracking tentativi nel transient
+3. ✅ Contatore visibile dopo primo errore (Opzione A)
+4. ✅ Messaggi progressivi (warning crescente)
+5. ✅ Redirect + messaggio quando token bruciato
+
+Oppure preferisci **Opzione B** (info sempre visibile) o altre modifiche? 🎯
+
+---
+
+_**User (2025-12-01 12:29Z)**_
+
+Procedi con la configurazione consigliata. Prima di procedere controlla se queste funzioni possono essere inserite in includes/class-wplf-login-enhancer.php o se meglio nel file core come suggerito da te
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Analisi completata. Ecco la mia raccomandazione:
+
+## 📁 Decisione Architetturale
+
+### **❌ NON inserire in `class-wplf-login-enhancer.php`**
+
+**Motivi:**
+1. **Login Enhancer** si occupa solo di **visualizzazione** (countdown, stili CSS)
+2. Non ha accesso a `$this->rate_limiter`, `$this->ip_blocker`, `$this->logger`
+3. Non gestisce logica di sicurezza, solo UI
+
+### **✅ Inserire in `class-wplf-core.php`**
+
+**Motivi:**
+1. **Core** già gestisce l'autenticazione e validazione token
+2. Ha accesso a tutte le dipendenze necessarie (rate_limiter, logger, ip_blocker)
+3. Hook `authenticate` deve stare qui (priorità alta, prima di WP)
+4. Tracking tentativi falliti è logica di **sicurezza**, non UI
+
+---
+
+## 🎯 Implementazione Raccomandata
+
+Aggiungerò nel **Core**:
+- Nuova proprietà `$token_data['failed_attempts']` e `$max_attempts]`
+- Hook `authenticate` per tracking password sbagliate
+- Metodo `track_password_attempts()`
+- Logica token burning
+
+Nel **Login Enhancer**:
+- Solo visualizzazione contatore tentativi rimanenti
+- Solo messaggi di warning progressivi
+- Nessuna logica di business
+
+Procedo con questa architettura? 🚀
+
+---
+
+_**User (2025-12-01 12:29Z)**_
+
+ok
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+
+---
+

@@ -36,8 +36,15 @@ class WPLF_Core {
         // Intercetta il login
         add_action('login_init', array($this, 'intercept_login'));
         
+        // Hook authenticate per tracking tentativi password falliti (priorità 30, dopo validazione WP)
+        add_filter('authenticate', array($this, 'track_password_attempts'), 30, 3);
+        
         // Handler AJAX per la verifica username
         add_action('wp_ajax_nopriv_wplf_verify_username', array($this, 'ajax_verify_username'));
+        
+        // Handler AJAX per cancellare i log di debug
+        add_action('wp_ajax_nopriv_wplf_clear_debug', array($this, 'ajax_clear_debug'));
+        add_action('wp_ajax_wplf_clear_debug', array($this, 'ajax_clear_debug'));
         
         // Elimina token dopo login riuscito
         add_action('wp_login', array($this, 'cleanup_token_after_login'), 10, 2);
@@ -47,31 +54,61 @@ class WPLF_Core {
      * Intercetta l'accesso a wp-login.php
      */
     public function intercept_login() {
+        // DEBUG: Log dello stato corrente
+        if (get_option('wplf_debug_mode', 0)) {
+            WPLF_Debug::get_instance()->log_intercept();
+        }
+        
         // Verifica se l'IP è bloccato
         if ($this->ip_blocker->is_blocked()) {
             $this->logger->log_attempt('', 'blocked', 'IP bloccato - tentativo di accesso');
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->add_action('IP bloccato, mostra pagina blocco');
+            }
             $this->show_blocked_page();
             exit;
         }
         
         // Se c'è un token valido nel cookie, lascia passare
         if (isset($_COOKIE['wplf_token']) && $this->validate_token($_COOKIE['wplf_token'])) {
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->add_action('Token cookie valido, lascia passare');
+            }
             return;
         }
         
         // Backward compatibility: leggi anche da URL (deprecato)
         if (isset($_GET['wplf_token']) && $this->validate_token($_GET['wplf_token'])) {
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->add_action('Token URL valido, lascia passare');
+            }
             return;
         }
         
         // Se è logout o altre azioni specifiche, lascia passare
         if (isset($_GET['action']) && in_array($_GET['action'], array('logout', 'lostpassword', 'retrievepassword', 'resetpass', 'rp', 'register'))) {
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->add_action('Azione speciale: ' . $_GET['action']);
+            }
             return;
         }
         
         // Mostra la pagina di verifica personalizzata
+        if (get_option('wplf_debug_mode', 0)) {
+            WPLF_Debug::get_instance()->add_action('Nessun token valido, mostra verifica');
+        }
         $this->show_verification_page();
         exit;
+    }
+    
+    /**
+     * Aggiunge un messaggio al log di debug
+     */
+    private function add_debug_log($message) {
+        // Deprecato: ora gestito da WPLF_Debug
+        if (get_option('wplf_debug_mode', 0)) {
+            WPLF_Debug::get_instance()->add_action($message);
+        }
     }
     
     /**
@@ -127,6 +164,13 @@ class WPLF_Core {
                         </button>
                     </form>
                     
+                    <?php 
+                    // Renderizza pannello debug se abilitato
+                    if (get_option('wplf_debug_mode', 0)) {
+                        WPLF_Debug::get_instance()->render_panel();
+                    }
+                    ?>
+                    
                     <div class="wplf-footer">
                         <a href="<?php echo home_url(); ?>" class="wplf-back-link">← Torna al sito</a>
                     </div>
@@ -168,14 +212,38 @@ class WPLF_Core {
             wp_send_json_error('Inserisci un username o email');
         }
         
+        // Ottiene IP per logging e controlli
+        $client_ip = $this->get_client_ip();
+        
+        // RATE LIMIT DEDICATO PER VERIFICA USERNAME (previene loop infiniti)
+        $verify_limit_attempts = get_option('wplf_verify_limit_attempts', 3);
+        $verify_limit_minutes = get_option('wplf_verify_limit_minutes', 15);
+        $verify_rate_key = 'wplf_verify_rate_' . md5($client_ip);
+        $verify_attempts = get_transient($verify_rate_key);
+        
+        if ($verify_attempts === false) {
+            $verify_attempts = 0;
+        }
+        
         // Verifica se l'utente esiste PRIMA del rate limiting (per whitelist admin)
         $user = get_user_by('login', $username);
         if (!$user) {
             $user = get_user_by('email', $username);
         }
         
-        // Ottiene IP per logging e controlli
-        $client_ip = $this->get_client_ip();
+        // Verifica se whitelist admin è abilitata
+        $admin_whitelist_enabled = get_option('wplf_admin_whitelist', 1);
+        
+        // Se NON è admin O whitelist disabilitata, applica rate limit verifica
+        if (!($user && user_can($user, 'manage_options') && $admin_whitelist_enabled)) {
+            if ($verify_attempts >= $verify_limit_attempts) {
+                $ttl = $this->get_transient_ttl($verify_rate_key);
+                $minutes_remaining = ceil($ttl / 60);
+                
+                $this->logger->log_attempt($username, 'rate_limited', 'Rate limit verifica username superato');
+                wp_send_json_error('Troppi tentativi di verifica. Riprova tra ' . $minutes_remaining . ' minut' . ($minutes_remaining == 1 ? 'o' : 'i'));
+            }
+        }
         
         // Verifica se whitelist admin è abilitata
         $admin_whitelist_enabled = get_option('wplf_admin_whitelist', 1);
@@ -198,13 +266,21 @@ class WPLF_Core {
             
             // Ottiene scadenza token configurabile (default: 5 minuti)
             $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+            $max_password_attempts = get_option('wplf_max_password_attempts', 5);
             
             // Salva il token come transient
             set_transient('wplf_token_' . $token, array(
                 'user_id' => $user->ID,
                 'username' => $username,
-                'timestamp' => current_time('timestamp')
+                'timestamp' => current_time('timestamp'),
+                'failed_attempts' => 0,
+                'max_attempts' => $max_password_attempts
             ), $token_lifetime);
+            
+            // DEBUG: Log creazione token
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->log_token_created($username, $token, $token_lifetime);
+            }
             
             // Imposta cookie sicuro invece di passare token in URL
             setcookie(
@@ -253,6 +329,9 @@ class WPLF_Core {
         
         // Se l'utente non esiste
         if (!$user) {
+            // Incrementa contatore verifica username
+            set_transient($verify_rate_key, $verify_attempts + 1, $verify_limit_minutes * MINUTE_IN_SECONDS);
+            
             // Log tentativo fallito PRIMA di incrementare rate limiter
             $this->logger->log_attempt($username, 'failed', 'Username/email non trovato');
             
@@ -275,6 +354,9 @@ class WPLF_Core {
         // Utente normale (non admin): resetta rate limit e procedi
         $this->rate_limiter->reset_rate_limit();
         
+        // Resetta anche contatore verifica username
+        delete_transient($verify_rate_key);
+        
         // Log successo
         $this->logger->log_attempt($username, 'success', 'Username verificato con successo');
         
@@ -283,13 +365,21 @@ class WPLF_Core {
         
         // Ottiene scadenza token configurabile (default: 5 minuti)
         $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+        $max_password_attempts = get_option('wplf_max_password_attempts', 5);
         
         // Salva il token come transient
         set_transient('wplf_token_' . $token, array(
             'user_id' => $user->ID,
             'username' => $username,
-            'timestamp' => current_time('timestamp')
+            'timestamp' => current_time('timestamp'),
+            'failed_attempts' => 0,
+            'max_attempts' => $max_password_attempts
         ), $token_lifetime);
+        
+        // DEBUG: Log creazione token
+        if (get_option('wplf_debug_mode', 0)) {
+            WPLF_Debug::get_instance()->log_token_created($username, $token, $token_lifetime);
+        }
         
         // Imposta cookie sicuro invece di passare token in URL
         setcookie(
@@ -377,6 +467,117 @@ class WPLF_Core {
                 'samesite' => 'Lax'
             )
         );
+    }
+    
+    /**
+     * Traccia i tentativi di password falliti e brucia il token se supera il limite
+     * 
+     * Hook: authenticate (priorità 30, dopo validazione WordPress)
+     * 
+     * @param WP_User|WP_Error|null $user Utente autenticato o errore
+     * @param string $username Username fornito
+     * @param string $password Password fornita
+     * @return WP_User|WP_Error
+     */
+    public function track_password_attempts($user, $username, $password) {
+        // Se non c'è token, skip (login diretto senza verifica)
+        if (!isset($_COOKIE['wplf_token']) || empty($_COOKIE['wplf_token'])) {
+            return $user;
+        }
+        
+        $token = sanitize_text_field($_COOKIE['wplf_token']);
+        $token_data = get_transient('wplf_token_' . $token);
+        
+        // Token non valido o scaduto
+        if (!$token_data) {
+            return $user;
+        }
+        
+        // Se login riuscito, non fare nulla (cleanup gestito da wp_login hook)
+        if (!is_wp_error($user) && $user instanceof WP_User) {
+            return $user;
+        }
+        
+        // Se è un errore di WordPress (password sbagliata, ecc.)
+        if (is_wp_error($user)) {
+            // Incrementa contatore tentativi falliti
+            $token_data['failed_attempts']++;
+            
+            // Verifica se ha raggiunto il limite
+            if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+                // TOKEN BRUCIATO: elimina token e cookie
+                delete_transient('wplf_token_' . $token);
+                setcookie(
+                    'wplf_token',
+                    '',
+                    array(
+                        'expires' => time() - 3600,
+                        'path' => COOKIEPATH,
+                        'domain' => COOKIE_DOMAIN,
+                        'secure' => is_ssl(),
+                        'httponly' => true,
+                        'samesite' => 'Lax'
+                    )
+                );
+                
+                // Log evento token bruciato
+                if (get_option('wplf_debug_mode', 0)) {
+                    WPLF_Debug::get_instance()->add_action('Token bruciato: troppi tentativi password (' . $token_data['failed_attempts'] . '/' . $token_data['max_attempts'] . ')');
+                }
+                
+                // Reindirizza a verifica con messaggio errore
+                $redirect_url = wp_login_url();
+                $redirect_url = add_query_arg('wplf_error', 'token_burned', $redirect_url);
+                
+                // Forza redirect (interrompe autenticazione)
+                wp_redirect($redirect_url);
+                exit;
+            }
+            
+            // Aggiorna token con nuovo contatore
+            $token_lifetime = get_option('wplf_token_lifetime', 5) * MINUTE_IN_SECONDS;
+            $elapsed = current_time('timestamp') - $token_data['timestamp'];
+            $remaining = $token_lifetime - $elapsed;
+            
+            if ($remaining > 0) {
+                set_transient('wplf_token_' . $token, $token_data, $remaining);
+            }
+            
+            // Debug log
+            if (get_option('wplf_debug_mode', 0)) {
+                WPLF_Debug::get_instance()->add_action('Password errata: tentativo ' . $token_data['failed_attempts'] . '/' . $token_data['max_attempts']);
+            }
+        }
+        
+        return $user;
+    }
+    
+    /**
+     * Ottiene il TTL rimanente di un transient
+     * 
+     * @param string $transient_key Chiave del transient
+     * @return int TTL in secondi
+     */
+    private function get_transient_ttl($transient_key) {
+        $timeout_key = '_transient_timeout_' . $transient_key;
+        $timeout = get_option($timeout_key);
+        
+        if ($timeout === false) {
+            return 0;
+        }
+        
+        $remaining = $timeout - time();
+        return max(0, $remaining);
+    }
+    
+    /**
+     * Handler AJAX per cancellare i log di debug
+     */
+    public function ajax_clear_debug() {
+        if (get_option('wplf_debug_mode', 0)) {
+            WPLF_Debug::get_instance()->clear_logs();
+        }
+        wp_send_json_success();
     }
     
     /**
