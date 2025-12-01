@@ -71,8 +71,8 @@ class WPLF_Login_Enhancer {
         <?php if ($token_burned): ?>
             <div class="wplf-attempts-notice wplf-attempts-error">
                 <p>
-                    ❌ <strong>Troppi tentativi errati.</strong> Il tuo codice di verifica è stato invalidato.<br>
-                    <a href="<?php echo esc_url(wp_login_url()); ?>">Clicca qui per richiedere un nuovo codice</a>
+                    <strong>Troppi tentativi errati.</strong><br>
+                    <a href="<?php echo esc_url(wp_login_url()); ?>">Clicca qui per procedere con una nuova verifica</a>
                 </p>
             </div>
         <?php elseif ($failed_attempts > 0): ?>
@@ -82,8 +82,8 @@ class WPLF_Login_Enhancer {
                 </p>
                 <?php if ($remaining_attempts <= 2): ?>
                     <p class="wplf-attempts-hint">
-                        💡 Attenzione: se sbagli di nuovo dovrai richiedere un nuovo codice di verifica.<br>
-                        <a href="<?php echo esc_url(wp_lostpassword_url()); ?>">Password dimenticata?</a>
+                        Attenzione: se sbagli di nuovo dovrai procedere con una nuova verifica.<br>
+                        <!-- <a href="<?php echo esc_url(wp_lostpassword_url()); ?>">Password dimenticata?</a> -->
                     </p>
                 <?php endif; ?>
             </div>
