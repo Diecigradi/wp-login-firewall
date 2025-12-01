@@ -78,7 +78,7 @@ class WPLF_Login_Enhancer {
         <?php elseif ($failed_attempts > 0): ?>
             <div class="wplf-attempts-notice">
                 <p>
-                    Password errata. Tentativi rimanenti: <strong><?php echo esc_html($remaining_attempts); ?>/<?php echo esc_html($max_attempts); ?></strong>
+                    Password errata. Tentativo <strong><?php echo esc_html($failed_attempts); ?> di <?php echo esc_html($max_attempts); ?></strong> fallito.
                 </p>
                 <?php if ($remaining_attempts == 1): ?>
                     <p class="wplf-attempts-hint">
