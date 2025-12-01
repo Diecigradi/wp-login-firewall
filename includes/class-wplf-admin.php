@@ -655,7 +655,7 @@ class WPLF_Admin {
                     <tbody>
                         <tr>
                             <th scope="row">
-                                <label>Rate Limiting</label>
+                                <label>Limite Tentativi Login Standard</label>
                             </th>
                             <td>
                                 <fieldset>
@@ -672,7 +672,7 @@ class WPLF_Admin {
                                         minuti
                                     </label>
                                     <p class="description">
-                                        Numero massimo di tentativi di verifica username consentiti per IP nel periodo specificato.
+                                        Protegge dal login diretto (senza passare per verifica username). Se disabiliti la verifica a due step, questa è l'unica protezione attiva.
                                     </p>
                                 </fieldset>
                             </td>
@@ -778,7 +778,7 @@ class WPLF_Admin {
                         
                         <tr>
                             <th scope="row">
-                                <label>Rate Limit Verifica Username</label>
+                                <label>Limite Richieste Verifica</label>
                             </th>
                             <td>
                                 <fieldset>
@@ -795,7 +795,7 @@ class WPLF_Admin {
                                         minuti
                                     </label>
                                     <p class="description">
-                                        Limite di richieste token per prevenire loop di verifica username. <strong>Default: 3 ogni 15 minuti</strong>
+                                        Previene loop infiniti di richiesta codice verifica. Limita quante volte un IP può richiedere un nuovo token. <strong>Default: 3 ogni 15 minuti</strong>
                                     </p>
                                 </fieldset>
                             </td>
