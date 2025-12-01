@@ -5276,3 +5276,21 @@ L'unica differenza visibile all'utente è che potrebbe vedere countdown arrivare
 
 ---
 
+_**User (2025-12-01 07:27Z)**_
+
+Vorrei procedere con questo apporccio ma vorrei che le funzioni sul form di login standard di wordpress fossero inserite in un file separato
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+✅ **Fatto!** Countdown token implementato in file separato.
+
+## 
+
+---
+

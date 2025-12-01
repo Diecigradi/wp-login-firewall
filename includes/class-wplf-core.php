@@ -38,6 +38,9 @@ class WPLF_Core {
         
         // Handler AJAX per la verifica username
         add_action('wp_ajax_nopriv_wplf_verify_username', array($this, 'ajax_verify_username'));
+        
+        // Elimina token dopo login riuscito
+        add_action('wp_login', array($this, 'cleanup_token_after_login'), 10, 2);
     }
     
     /**
@@ -320,7 +323,7 @@ class WPLF_Core {
     }
     
     /**
-     * Valida il token dal cookie
+     * Valida il token dal cookie (NON elimina, solo verifica)
      */
     private function validate_token($token = null) {
         // Se non passato come parametro, leggi dal cookie
@@ -332,16 +335,36 @@ class WPLF_Core {
             return false;
         }
         
+        // Verifica se il token esiste ed è ancora valido
         $token_data = get_transient('wplf_token_' . $token);
         
         if (!$token_data) {
             return false;
         }
         
-        // Elimina il token (one-time use)
+        // Token valido: NON eliminare qui
+        // Sarà eliminato dopo login effettivo o scadenza naturale
+        return true;
+    }
+    
+    /**
+     * Elimina token e cookie dopo login riuscito
+     * 
+     * @param string $user_login Username dell'utente
+     * @param WP_User $user Oggetto utente
+     */
+    public function cleanup_token_after_login($user_login, $user) {
+        // Leggi token dal cookie
+        $token = isset($_COOKIE['wplf_token']) ? $_COOKIE['wplf_token'] : '';
+        
+        if (empty($token)) {
+            return;
+        }
+        
+        // Elimina transient token
         delete_transient('wplf_token_' . $token);
         
-        // Elimina il cookie
+        // Elimina cookie
         setcookie(
             'wplf_token',
             '',
@@ -354,8 +377,6 @@ class WPLF_Core {
                 'samesite' => 'Lax'
             )
         );
-        
-        return true;
     }
     
     /**
