@@ -393,7 +393,10 @@ class WPLF_Admin {
      */
     private function format_status($status) {
         $badges = array(
-            'success' => '<span class="wplf-badge wplf-badge-success">Successo</span>',
+            'success' => '<span class="wplf-badge wplf-badge-success">Verifica OK</span>',
+            'login_success' => '<span class="wplf-badge wplf-badge-success">Login Riuscito</span>',
+            'password_failed' => '<span class="wplf-badge wplf-badge-warning">Password Errata</span>',
+            'token_burned' => '<span class="wplf-badge wplf-badge-error">Token Bruciato</span>',
             'failed' => '<span class="wplf-badge wplf-badge-error">Fallito</span>',
             'blocked' => '<span class="wplf-badge wplf-badge-error">Bloccato</span>',
             'rate_limited' => '<span class="wplf-badge wplf-badge-warning">Rate Limited</span>'

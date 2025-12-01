@@ -444,6 +444,13 @@ class WPLF_Core {
      * @param WP_User $user Oggetto utente
      */
     public function cleanup_token_after_login($user_login, $user) {
+        // Log login riuscito
+        $this->logger->log_attempt(
+            $user_login,
+            'login_success',
+            'Login WordPress completato con successo'
+        );
+        
         // Leggi token dal cookie
         $token = isset($_COOKIE['wplf_token']) ? $_COOKIE['wplf_token'] : '';
         
@@ -508,8 +515,22 @@ class WPLF_Core {
             // Incrementa contatore tentativi falliti
             $token_data['failed_attempts']++;
             
+            // Log tentativo password fallito
+            $this->logger->log_attempt(
+                $token_data['username'],
+                'password_failed',
+                'Password errata - Tentativo ' . $token_data['failed_attempts'] . ' di ' . $token_data['max_attempts']
+            );
+            
             // Verifica se ha raggiunto il limite
             if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+                // Log token bruciato
+                $this->logger->log_attempt(
+                    $token_data['username'],
+                    'token_burned',
+                    'Token invalidato dopo ' . $token_data['max_attempts'] . ' tentativi password falliti'
+                );
+                
                 // TOKEN BRUCIATO: elimina token e cookie
                 delete_transient('wplf_token_' . $token);
                 setcookie(

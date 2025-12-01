@@ -7983,3 +7983,664 @@ Con la tua configurazione (**Tentativi Password per Token = 3**):
 
 ---
 
+_**User (2025-12-01 13:09Z)**_
+
+ho capito ma non sarebbe meglio inserire tentativi 1/3 2/3 crescendo invece che tentativi rimasti 3/3 2/3 1/3 decrescendo?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Hai assolutamente ragione! È più intuitivo mostrare il **progresso crescente** invece del countdown decrescente:
+
+**Attuale (confuso):**
+- "Tentativi rimanenti: 2/3" → Sembra che ne hai ancora 2
+- "Tentativi rimanenti: 1/3" → Sembra che ne hai ancora 1
+
+**Proposto (chiaro):**
+- "Tentativo 1 di 3 fallito" → Hai sbagliato 1 volta
+- "Tentativo 2 di 3 fallito" → Hai sbagliato 2 volte, ultimo disponibile
+
+Implemento subito: 
+```
+
+```
+Perfetto! Ora il contatore è molto più chiaro e intuitivo:
+
+## ✅ Nuovo Comportamento
+
+Con **Tentativi Password per Token = 3**:
+
+```
+┌──────────────────────────────────────────────────┐
+│ 1° Errore Password                               │
+├──────────────────────────────────────────────────┤
+│ Password errata. Tentativo 1 di 3 fallito.      │
+└──────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│ 2° Errore Password                               │
+├──────────────────────────────────────────────────┤
+│ Password errata. Tentativo 2 di 3 fallito.      │
+│ Se sbagli di nuovo dovrai procedere con una     │
+│ nuova verifica.                                  │
+└──────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│ 3° Errore Password                               │
+├──────────────────────────────────────────────────┤
+│ Troppi tentativi errati.                         │
+│ Token bruciato → Nuova verifica richiesta        │
+└──────────────────────────────────────────────────┘
+```
+
+Molto più chiaro: l'utente vede **quanti errori ha fatto** invece di dover calcolare quanti ne rimangono! 🎯
+
+---
+
+_**User (2025-12-01 13:14Z)**_
+
+Ok ora funziona correttamente. Se un ip è bloccato cosa succede?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 🚫 Cosa Succede Quando un IP è Bloccato
+
+### **Come Viene Bloccato un IP**
+
+Un IP viene bloccato automaticamente quando:
+- Supera **5 tentativi falliti** totali nell'ultima ora (tua configurazione)
+- Include: username non trovato + password sbagliate + rate limit superati
+
+---
+
+### **Comportamento con IP Bloccato** Perfetto! Ecco cosa succede:
+
+## 🚫 Comportamento IP Bloccato
+
+### **1. Quando Viene Bloccato**
+```
+Scenario con le tue impostazioni:
+├─ Soglia: 5 tentativi falliti nell'ultima ora
+├─ Durata: 72 ore (3 giorni)
+└─ Contano: username errato + password sbagliata + rate limit
+```
+
+### **2. Cosa Vede l'Utente Bloccato**
+
+Quando un IP bloccato tenta di accedere a `/wp-login.php` o `/wp-admin`:
+
+```html
+┌─────────────────────────────────────────────────┐
+│                      🚫                         │
+│                                                 │
+│    Accesso Temporaneamente Bloccato            │
+│                                                 │
+│    Il tuo indirizzo IP è stato bloccato         │
+│    per motivi di sicurezza                      │
+│                                                 │
+│  ┌───────────────────────────────────────────┐ │
+│  │ Troppi tentativi di accesso falliti.      │ │
+│  │ Riprova tra 71 ore e 45 minuti.           │ │
+│  └───────────────────────────────────────────┘ │
+│                                                 │
+│    ← Torna al sito                              │
+└─────────────────────────────────────────────────┘
+```
+
+### **3. Cosa NON Può Fare**
+- ❌ Non vede la pagina di verifica username
+- ❌ Non può inserire credenziali
+- ❌ Non può accedere a `/wp-admin`
+- ❌ Non può fare logout/password dimenticata
+- ❌ Blocco totale per 72 ore
+
+### **4. Eccezioni al Blocco**
+
+**Gli Admin in Whitelist:**
+- ✅ Bypassano il blocco IP
+- ✅ Possono sempre accedere
+- ✅ Nessun rate limit
+
+**Azioni Consentite (anche se bloccato):**
+- ✅ `logout` - Può fare logout
+- ✅ `lostpassword` - Può richiedere reset password
+- ✅ `register` - Può registrarsi (se abilitato)
+
+### **5. Sblocco IP**
+
+**Automatico:**
+- Dopo 72 ore il blocco scade automaticamente
+
+**Manuale (da Admin):**
+- Dashboard → IP Bloccati
+- Pulsante "Sblocca" per ogni IP
+
+### **6. Log Attività**
+
+Ogni tentativo da IP bloccato viene registrato:
+```
+Data/Ora: 2025-12-01 14:30:15
+IP: 192.168.1.100
+Username: (vuoto)
+Status: blocked
+Messaggio: IP bloccato - tentativo di accesso
+```
+
+---
+
+## 💡 In Sintesi
+
+**IP Bloccato** = **Muro totale** per 72 ore. Può solo:
+- Tornare al sito pubblico
+- Attendere lo sblocco automatico
+- Contattare admin per sblocco manuale
+
+Protezione **molto efficace** contro brute force! 🛡️
+
+---
+
+_**User (2025-12-01 13:16Z)**_
+
+se un attaccante scopre il mio username viene bloccato con il suo ip io poi posso utilizzare la mia username per entare nel sistema?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## ✅ Sì, Puoi Entrare Senza Problemi!
+
+### **Scenario Completo**
+
+```
+┌─────────────────────────────────────────────────┐
+│ ATTACCANTE (IP: 192.168.1.100)                  │
+├─────────────────────────────────────────────────┤
+│ 1. Scopre username "Diecigradi-77"             │
+│ 2. Verifica username → Token generato           │
+│ 3. Prova 3 password sbagliate → Token bruciato  │
+│ 4. Richiede nuovo token (rate limit 1/3)       │
+│ 5. Prova altre 3 password → Token bruciato     │
+│ 6. Totale: 6 fallimenti                        │
+│ 7. ❌ IP 192.168.1.100 BLOCCATO 72 ORE         │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ TU (IP: 87.15.234.56)                           │
+├─────────────────────────────────────────────────┤
+│ 1. Vai su /wp-login.php                         │
+│ 2. Verifica username "Diecigradi-77" → ✅       │
+│ 3. Inserisci password corretta → ✅             │
+│ 4. ✅ ACCESSO RIUSCITO                          │
+│                                                 │
+│ Il blocco è per IP, NON per username!          │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔐 Protezioni che Ti Tutelano
+
+### **1. Blocco per IP, NON per Username**
+- L'IP dell'attaccante è bloccato
+- Il tuo username **NON è bloccato**
+- Tu accedi dal tuo IP → Nessun problema
+
+### **2. Admin Whitelist (se sei admin)**
+Con la tua configurazione (Whitelist Amministratori = ON):
+```
+Se sei admin:
+├─ Bypassa rate limit
+├─ Bypassa blocco IP
+├─ Bypassa verifica username (opzionale)
+└─ ✅ Accesso sempre garantito
+```
+
+### **3. Reset Password Sempre Disponibile**
+Anche se dimentichi la password:
+- Link "Password dimenticata?" sempre accessibile
+- Anche da IP bloccato funziona
+- Ricevi email con link reset
+
+---
+
+## 🎯 Cosa Rischia l'Attaccante
+
+Con le tue impostazioni:
+```
+Configurazione attuale:
+├─ Limite Richieste Verifica: 3 ogni 15 min
+├─ Tentativi Password per Token: 3
+├─ Blocco IP: 5 fallimenti → 72 ore
+└─ Risultato: Max 9 password in 15 min, poi blocco 3 giorni
+```
+
+**Scenario peggiore per attaccante:**
+1. Verifica username (1/3) → 3 password → Token bruciato
+2. Verifica username (2/3) → 3 password → Token bruciato  
+3. Verifica username (3/3) → IP raggiunge 9 fallimenti
+4. **Blocco IP 72 ore**
+5. Deve cambiare IP per continuare (proxy, VPN)
+
+---
+
+## 💡 Raccomandazioni Extra
+
+### **Se Vuoi Essere Ancora Più Sicuro:**
+
+**1. Cambia Username Periodicamente**
+- L'attaccante deve ricominciare da zero
+- Ogni volta che cambi username
+
+**2. Password Forte**
+- Minimo 12 caratteri
+- Lettere maiuscole/minuscole + numeri + simboli
+- Mai parole del dizionario
+
+**3. Autenticazione a Due Fattori (2FA)**
+- Plugin: Wordfence, Google Authenticator
+- Anche se l'attaccante scopre password, serve codice OTP
+
+**4. Monitora Log**
+- Dashboard → Log Accessi
+- Controlla IP sospetti
+- Blocca manualmente se vedi pattern strani
+
+---
+
+## ✅ Risposta Diretta
+
+**Domanda:** "Io poi posso utilizzare la mia username per entrare nel sistema?"
+
+**Risposta:** **SÌ, senza alcun problema!**
+- Il blocco è **solo per l'IP dell'attaccante**
+- Il tuo username funziona normalmente
+- Tu accedi dal tuo IP → **Zero problemi** 🎯
+
+Il plugin protegge il sistema bloccando gli IP malevoli, **non gli username**. Altrimenti un attaccante potrebbe bloccare tutti gli admin scoprendo i loro username! 🛡️
+
+---
+
+_**User (2025-12-01 13:19Z)**_
+
+Perfetto tutto chiaro. Ora vorrei fare una modifica ai tentativi di login sul form standard di login di wordpress. Falliti i tentativi invece che rimandare alla verifica vorrei che l'ip venisse bloccato direttamente. Prima di procedere puoi dirmi che cosa comporta questa modifica e il livello di difficoltà per attuarla?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 🔍 Analisi Modifica Richiesta
+
+### **Comportamento Attuale vs Proposto**
+
+```
+┌─────────────────────────────────────────────────┐
+│ ATTUALE (dopo verifica username + token)        │
+├─────────────────────────────────────────────────┤
+│ 1. Verifica username → Token                    │
+│ 2. Form login: 3 password sbagliate             │
+│ 3. ❌ Token bruciato                            │
+│ 4. → Redirect a verifica username               │
+│ 5. L'attaccante può richiedere nuovo token     │
+│ 6. Ciclo può ripetersi (con rate limit)        │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ PROPOSTO (blocco IP diretto)                    │
+├─────────────────────────────────────────────────┤
+│ 1. Verifica username → Token                    │
+│ 2. Form login: 3 password sbagliate             │
+│ 3. 🚫 IP BLOCCATO 72 ORE                        │
+│ 4. Nessun redirect, blocco totale              │
+│ 5. L'attaccante NON può richiedere nuovo token │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚠️ IMPATTI della Modifica
+
+### **1. Pro - Sicurezza Migliorata**
+✅ Attaccante bloccato immediatamente dopo 3 errori password  
+✅ Non può più ciclare verifica → password → verifica  
+✅ Riduce drasticamente finestra di attacco  
+✅ Protezione molto più aggressiva
+
+### **2. Contro - Rischi per Utenti Legittimi**
+
+❌ **Rischio Alto di Lockout Accidentale:**
+```
+Scenario utente che ha dimenticato password:
+├─ Verifica username "mario" → ✅ Token OK
+├─ Prova password vecchia → ❌ Errore 1/3
+├─ Prova variante password → ❌ Errore 2/3
+├─ Prova altra variante → ❌ Errore 3/3
+└─ 🚫 BLOCCATO 72 ORE (3 giorni!)
+```
+
+❌ **Problema Password Dimenticata:**
+- Utente bloccato per 3 giorni
+- Non può più accedere nemmeno per reset password
+- Deve aspettare 72 ore o contattare admin
+
+❌ **Admin Potrebbero Bloccarsi:**
+- Anche con whitelist attiva
+- Se sbagliano 3 volte potrebbero essere bloccati
+- Lockout totale del sito
+
+---
+
+## 🎯 Confronto Protezione
+
+### **Sistema Attuale (Multi-Livello)**
+```
+Attaccante ha:
+├─ 3 verifiche username / 15 min
+├─ 3 password per token
+├─ Max 9 password / 15 min
+└─ Blocco IP dopo 5 fallimenti totali
+
+Utente legittimo:
+├─ 3 tentativi password
+├─ Se sbaglia, può rifare verifica
+├─ Ha tempo di ricordare password
+└─ Reset password sempre disponibile
+```
+
+### **Sistema Proposto (Blocco Aggressivo)**
+```
+Attaccante ha:
+├─ 1 verifica username
+├─ 3 password MAX
+└─ Blocco immediato 72 ore
+
+Utente legittimo:
+├─ 3 tentativi password
+├─ Se sbaglia, BLOCCATO 3 giorni
+├─ Nessuna seconda chance
+└─ Deve aspettare o contattare admin
+```
+
+---
+
+## 🔧 Difficoltà Implementazione
+
+### **Livello: BASSO** 🟢
+
+**Modifiche necessarie:**
+1. File: `class-wplf-core.php` → `track_password_attempts()`
+2. Cambiare: Token bruciato → Blocco IP
+3. Righe di codice: ~10-15 linee
+
+**Codice da modificare:**
+```php
+// ATTUALE (redirect a verifica)
+if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+    delete_transient('wplf_token_' . $token);
+    wp_redirect(wp_login_url() . '?wplf_error=token_burned');
+    exit;
+}
+
+// PROPOSTO (blocco IP)
+if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+    $client_ip = $this->get_client_ip();
+    $duration = get_option('wplf_ip_block_duration', 24) * 3600;
+    $this->ip_blocker->block_ip($client_ip, 'Password errata 3 volte', $duration);
+    $this->show_blocked_page();
+    exit;
+}
+```
+
+**Tempo stimato:** 10 minuti
+
+---
+
+## 💡 RACCOMANDAZIONI
+
+### **Opzione A: Non Modificare (Consigliata)**
+- Sistema attuale è **equilibrato**
+- Sicurezza alta + UX accettabile
+- Utenti legittimi hanno chance di recupero
+
+### **Opzione B: Blocco Aggressivo + Esclusioni**
+Se proprio vuoi blocco diretto, aggiungi:
+1. **Whitelist admin** sempre attiva (no blocco per admin)
+2. **Ridurre durata blocco** a 1-2 ore invece di 72
+3. **Email notifica** all'admin quando IP bloccato
+4. **Pagina sblocco** con CAPTCHA
+
+### **Opzione C: Sistema Ibrido (Bilanciato)**
+```
+├─ 1° ciclo (3 pwd): Token bruciato → Verifica
+├─ 2° ciclo (3 pwd): Token bruciato → Verifica
+├─ 3° ciclo (3 pwd): BLOCCO IP 72 ore
+└─ Max 9 password prima del blocco definitivo
+```
+
+---
+
+## ❓ Domanda Finale
+
+**Vuoi davvero procedere con blocco IP diretto dopo 3 password sbagliate?**
+
+Se sì, ti consiglio di:
+1. ✅ Ridurre durata blocco a **2-6 ore** (non 72)
+2. ✅ Garantire che admin whitelist bypassa blocco
+3. ✅ Aggiungere notifica email quando IP bloccato
+4. ✅ Testare in ambiente locale prima di produzione
+
+**La mia raccomandazione:** Sistema attuale è già molto sicuro e più user-friendly. Ma se vuoi massima sicurezza, possiamo implementare **Opzione C (Sistema Ibrido)**. 
+
+Quale preferisci? 🎯
+
+---
+
+_**User (2025-12-01 13:24Z)**_
+
+Ok per il momento manteniamo così però teniamo in considerazione questa modifica per il futuro. Ora nel backend pagina log accessi vorrei che venissero riportati anche i log dei tentativi sul form di login di wordpress standard in modo chiaro. Prima di procedere dimmi che cosa dovresti fare e come
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+## 🔍 Analisi Log Attuali vs Proposti
+
+### **Situazione Attuale - Log Registrati** Perfetto! Ora analizzo cosa manca:
+
+## 📊 Analisi Log Attuali
+
+### **Log GIÀ Registrati** ✅
+
+```
+┌─────────────────────────────────────────────────┐
+│ 1. Verifica Username                            │
+├─────────────────────────────────────────────────┤
+│ ✅ Username verificato con successo             │
+│ ✅ Username/email non trovato                   │
+│ ✅ Rate limit verifica username superato        │
+│ ✅ Admin verificato (whitelist)                 │
+│ ✅ IP bloccato - tentativo di accesso           │
+│ ✅ Nonce non valido                             │
+└─────────────────────────────────────────────────┘
+```
+
+### **Log MANCANTI** ❌
+
+```
+┌─────────────────────────────────────────────────┐
+│ 2. Form Login WordPress Standard                │
+├─────────────────────────────────────────────────┤
+│ ❌ Password errata (tentativo 1/3)              │
+│ ❌ Password errata (tentativo 2/3)              │
+│ ❌ Password errata (tentativo 3/3)              │
+│ ❌ Token bruciato dopo 3 errori                 │
+│ ❌ Login riuscito                               │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 Modifiche da Implementare
+
+### **Difficoltà: BASSA** 🟢
+
+**File da modificare:** `class-wplf-core.php` → `track_password_attempts()`
+
+### **Cosa Aggiungere**
+
+#### **1. Log Password Errata**
+```php
+// Quando incrementa failed_attempts
+$token_data['failed_attempts']++;
+
+// AGGIUNGERE:
+$this->logger->log_attempt(
+    $token_data['username'],
+    'password_failed',
+    'Password errata - Tentativo ' . $token_data['failed_attempts'] . ' di ' . $token_data['max_attempts']
+);
+```
+
+#### **2. Log Token Bruciato**
+```php
+// Quando token raggiunge limite
+if ($token_data['failed_attempts'] >= $token_data['max_attempts']) {
+    
+    // AGGIUNGERE:
+    $this->logger->log_attempt(
+        $token_data['username'],
+        'token_burned',
+        'Token invalidato dopo ' . $token_data['max_attempts'] . ' tentativi falliti'
+    );
+    
+    // Poi elimina token e redirect...
+}
+```
+
+#### **3. Log Login Riuscito**
+```php
+// Nel metodo cleanup_token_after_login()
+public function cleanup_token_after_login($user_login, $user) {
+    
+    // AGGIUNGERE all'inizio:
+    $this->logger->log_attempt(
+        $user_login,
+        'login_success',
+        'Login completato con successo'
+    );
+    
+    // Poi cleanup token...
+}
+```
+
+---
+
+## 📋 Nuovi Status Log
+
+### **Tabella Status Completa**
+
+| Status Attuale | Status Nuovo | Descrizione |
+|----------------|--------------|-------------|
+| `success` | ✅ Già presente | Username verificato |
+| `failed` | ✅ Già presente | Username non trovato / Nonce invalido |
+| `blocked` | ✅ Già presente | IP bloccato |
+| `rate_limited` | ✅ Già presente | Rate limit superato |
+| - | 🆕 `password_failed` | Password errata (1/3, 2/3, 3/3) |
+| - | 🆕 `token_burned` | Token invalidato dopo N errori |
+| - | 🆕 `login_success` | Login WordPress completato |
+
+---
+
+## 🎨 Come Appariranno nel Backend
+
+### **Dashboard → Log Accessi (DOPO modifica)**
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ Data/Ora           │ IP            │ Username      │ Status         │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:30  │ 192.168.1.50  │ mario         │ ✅ success     │
+│ 2025-12-01 14:31  │ 192.168.1.50  │ mario         │ ❌ password_failed │
+│ Messaggio: Password errata - Tentativo 1 di 3                    │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:32  │ 192.168.1.50  │ mario         │ ❌ password_failed │
+│ Messaggio: Password errata - Tentativo 2 di 3                    │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:33  │ 192.168.1.50  │ mario         │ ❌ password_failed │
+│ Messaggio: Password errata - Tentativo 3 di 3                    │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:33  │ 192.168.1.50  │ mario         │ 🔥 token_burned│
+│ Messaggio: Token invalidato dopo 3 tentativi falliti             │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:35  │ 192.168.1.50  │ mario         │ ✅ success     │
+│ Messaggio: Username verificato con successo                      │
+├──────────────────────────────────────────────────────────────────┤
+│ 2025-12-01 14:36  │ 192.168.1.50  │ mario         │ ✅ login_success│
+│ Messaggio: Login completato con successo                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 Badge Colorati nel Backend
+
+Aggiornare anche `class-wplf-admin.php` → `format_status()`:
+
+```php
+private function format_status($status) {
+    $badges = array(
+        'success' => '<span class="wplf-badge wplf-badge-success">Verifica OK</span>',
+        'login_success' => '<span class="wplf-badge wplf-badge-success">Login Riuscito</span>',
+        'password_failed' => '<span class="wplf-badge wplf-badge-warning">Password Errata</span>',
+        'token_burned' => '<span class="wplf-badge wplf-badge-error">Token Bruciato</span>',
+        'failed' => '<span class="wplf-badge wplf-badge-error">Fallito</span>',
+        'blocked' => '<span class="wplf-badge wplf-badge-error">Bloccato</span>',
+        'rate_limited' => '<span class="wplf-badge wplf-badge-warning">Rate Limited</span>'
+    );
+    
+    return isset($badges[$status]) ? $badges[$status] : '<span class="wplf-badge">' . esc_html($status) . '</span>';
+}
+```
+
+---
+
+## 📦 Riepilogo Modifiche
+
+**File da modificare:**
+1. ✅ `class-wplf-core.php` (3 punti di logging)
+2. ✅ `class-wplf-admin.php` (aggiornare badge)
+
+**Righe di codice:** ~30 linee totali  
+**Tempo stimato:** 15 minuti  
+**Difficoltà:** BASSA 🟢  
+**Rischio:** MINIMO (solo logging, nessuna logica modificata)  
+
+---
+
+## 💡 Benefici
+
+✅ **Tracciabilità completa** di tutto il flusso login  
+✅ **Visibilità pattern di attacco** (es: molti password_failed consecutivi)  
+✅ **Debug facilitato** (vedi esattamente dove fallisce)  
+✅ **Audit trail** completo per sicurezza  
+
+---
+
+Vuoi che proceda con l'implementazione? 🚀
+
+---
+
+_**User (2025-12-01 13:24Z)**_
+
+ok
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+
+---
+
