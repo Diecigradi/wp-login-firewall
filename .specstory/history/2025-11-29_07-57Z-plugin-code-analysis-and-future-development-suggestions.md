@@ -7335,7 +7335,7 @@ Procedo con questa architettura? 🚀
 
 ---
 
-_**User (2025-12-01 12:29Z)**_
+_**User (2025-12-01 12:34Z)**_
 
 ok
 
@@ -7343,6 +7343,256 @@ ok
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Gli errori sono falsi positivi (funzioni WordPress non riconosciute dal linter). Tutto ok! Ora commit e test: Perfetto! Implementazione completata con successo. 
+
+## ✅ Riepilogo Funzionalità Implementate
+
+### **🔒 3 Livelli di Protezione Attivi**
+
+**1. Rate Limit Verifica Username** (NUOVO)
+- 3 verifiche max ogni 15 minuti
+- Blocca loop infiniti di richiesta token
+- Admin bypassano se whitelist attiva
+
+**2. Token Burning** (NUOVO)
+- 5 password sbagliate → token invalidato
+- Contatore visivo: 3/5 rimanenti
+- Messaggi progressivi (warning → critico)
+
+**3. Blocco IP Automatico** (esistente + potenziato)
+- 5 tentativi falliti → blocco 72 ore
+- Conta sia verifica che password failures
+- Integrazione perfetta con nuovo sistema
+
+---
+
+### **📊 Impostazioni Configurabili**
+
+Nella pagina **Settings** hai ora:
+
+1. **Rate Limit Verifica Username**
+   - Tentativi: 1-10 (default 3)
+   - Minuti: 5-60 (default 15)
+
+2. **Tentativi Password per Token**
+   - Range: 3-20 (default 5)
+
+3. **Tutte le impostazioni precedenti** (rate limit login, blocco IP, token lifetime, ecc.)
+
+---
+
+### **👁️ Feedback Utente**
+
+Il form di login ora mostra:
+
+- ✅ Countdown token (già presente, funzionante)
+- 🆕 **Contatore tentativi** dopo primo errore: "⚠️ Password errata. Tentativi rimanenti: 3/5"
+- 🆕 **Warning critico** ultimi 2 tentativi con link "Password dimenticata?"
+- 🆕 **Token bruciato** con messaggio e redirect automatico a verifica
+
+---
+
+### **🎯 Risultati con Le Tue Impostazioni Attuali**
+
+Con le impostazioni della screenshot:
+- Token: 1 minuto
+- Rate Limit Login: 3/30 min
+- Blocco IP: 5 tentativi → 72 ore
+- **Verify Limit: 3/15 min** (nuovo)
+- **Max Password: 5** (nuovo)
+
+**Scenario attacco:**
+1. Verifica username (1/3) → token 60 secondi
+2. 5 password sbagliate in 60 sec → **token bruciato**
+3. Verifica username (2/3) → nuovo token 60 sec
+4. 5 password sbagliate → **token bruciato** + 10 failures totali
+5. **IP BLOCCATO 72 ore** (superati 5 failures)
+
+**Massimo danno possibile:** 10 password in ~2 minuti, poi blocco definitivo! 🛡️
+
+---
+
+_**User (2025-12-01 12:41Z)**_
+
+Ora vedo la pagina impostazioni in backend così. È giusto che ci siano le impostazioni per rate limiting e rate limit verifica username?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ottima osservazione! Hai ragione, c'è **confusione nei nomi**. Analizziamo:
+
+## 🔍 Problema Attuale
+
+Nella pagina Settings hai DUE voci che sembrano duplicate:
+
+1. **"Rate Limiting"** → 3 tentativi / 30 minuti
+2. **"Rate Limit Verifica Username"** → 3 verifiche / 15 minuti
+
+## ❌ Perché Confonde
+
+Un utente non tecnico potrebbe pensare:
+- "Non è la stessa cosa?"
+- "Cosa cambia tra i due?"
+- "Quale devo modificare?"
+
+## ✅ Soluzione: Nomi più Chiari
+
+Ti suggerisco di **rinominare** per distinguere meglio le funzioni:
+
+### **Opzione A: Nomi Descrittivi (Consigliata)**
+
+1. **"Rate Limit Login Diretto"** o **"Limite Tentativi Login Standard"**
+   - Descrizione: _"Protezione per login diretto (senza verifica username). Blocca IP che tentano login ripetuti."_
+   
+2. **"Rate Limit Verifica Username"** 
+   - Descrizione: _"Limite di richieste token per prevenire loop di verifica username."_
+
+### **Opzione B: Semplificazione (Più User-Friendly)**
+
+1. **"Protezione Login Standard"**
+   - Sottotitolo: _Tentativi login diretto_
+   
+2. **"Protezione Verifica Username"**
+   - Sottotitolo: _Limite richieste codice verifica_
+
+### **Opzione C: Riorganizzazione Completa**
+
+Raggruppare in sezioni logiche:
+
+```
+┌─────────────────────────────────────────────┐
+│ PROTEZIONE LOGIN                            │
+├─────────────────────────────────────────────┤
+│ Rate Limiting Login Standard                │
+│ 3 tentativi / 30 minuti                     │
+│                                             │
+│ Rate Limiting Verifica Username             │
+│ 3 verifiche / 15 minuti                     │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│ PROTEZIONE TOKEN                            │
+├─────────────────────────────────────────────┤
+│ Scadenza Token: 1 minuto                    │
+│ Tentativi Password: 5 tentativi             │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│ BLOCCO IP AUTOMATICO                        │
+├─────────────────────────────────────────────┤
+│ Soglia: 5 tentativi                         │
+│ Durata: 72 ore                              │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## 💡 La Mia Raccomandazione
+
+Cambierei i **label** in questo modo:
+
+| Attuale | Nuovo | Perché |
+|---------|-------|--------|
+| "Rate Limiting" | **"Limite Tentativi Login Standard"** | Chiarisce che si applica al login diretto (non alla verifica) |
+| "Rate Limit Verifica Username" | **"Limite Richieste Verifica"** | Più breve e chiaro |
+
+E aggiornerei le **descrizioni** per essere più esplicite:
+
+1. **Limite Tentativi Login Standard**
+   > _"Protegge dal login diretto (senza passare per verifica username). Se disabiliti la verifica a due step, questa è l'unica protezione attiva."_
+
+2. **Limite Richieste Verifica**
+   > _"Previene loop infiniti di richiesta codice verifica. Limita quante volte un IP può richiedere un nuovo token."_
+
+---
+
+Quale opzione preferisci? O vuoi mantenere così com'è e aggiungere solo descrizioni più chiare? 🎯
+
+---
+
+_**User (2025-12-01 12:42Z)**_
+
+usa la tua raccomandazione
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+Perfetto! Modifiche applicate. Ora la pagina Settings sarà molto più chiara:
+
+## ✅ Nuovi Label
+
+### **1. Limite Tentativi Login Standard**
+- **Prima:** "Rate Limiting" (generico, confuso)
+- **Ora:** Chiarisce che protegge il login diretto WordPress
+- **Descrizione:** Spiega quando è attivo (se disabiliti verifica username)
+
+### **2. Limite Richieste Verifica**
+- **Prima:** "Rate Limit Verifica Username" (lungo, tecnico)
+- **Ora:** Più conciso e comprensibile
+- **Descrizione:** Spiega esplicitamente che previene loop infiniti
+
+---
+
+## 📋 Come Apparirà Ora
+
+```
+┌─────────────────────────────────────────────────┐
+│ Limite Tentativi Login Standard                │
+│ [3] tentativi ogni [30] minuti                  │
+│ Protegge dal login diretto (senza passare       │
+│ per verifica username). Se disabiliti la        │
+│ verifica a due step, questa è l'unica           │
+│ protezione attiva.                              │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ Limite Richieste Verifica                       │
+│ [3] verifiche ogni [15] minuti                  │
+│ Previene loop infiniti di richiesta codice      │
+│ verifica. Limita quante volte un IP può         │
+│ richiedere un nuovo token. Default: 3 ogni      │
+│ 15 minuti                                       │
+└─────────────────────────────────────────────────┘
+```
+
+Ora è chiaro che sono **due protezioni diverse** con scopi diversi! 🎯
+
+---
+
+_**User (2025-12-01 12:50Z)**_
+
+Dopo la verifica dell'utente vedo subito il messaggio dei tentativi che riporta 2/3 e il messaggio Attenzione: se sbagli di nuovo dovrai procedere con una nuova verifica. è già presente. Inoltre rimuovi icone animazioni e colori rendedno tutto più minimale
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
 
 
 ---

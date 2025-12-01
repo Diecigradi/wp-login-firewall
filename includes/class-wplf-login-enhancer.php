@@ -69,21 +69,20 @@ class WPLF_Login_Enhancer {
         </div>
         
         <?php if ($token_burned): ?>
-            <div class="wplf-attempts-notice wplf-attempts-error">
+            <div class="wplf-attempts-notice">
                 <p>
-                    <strong>Troppi tentativi errati.</strong><br>
+                    Troppi tentativi errati.<br>
                     <a href="<?php echo esc_url(wp_login_url()); ?>">Clicca qui per procedere con una nuova verifica</a>
                 </p>
             </div>
         <?php elseif ($failed_attempts > 0): ?>
-            <div class="wplf-attempts-notice <?php echo $remaining_attempts <= 2 ? 'wplf-attempts-critical' : 'wplf-attempts-warning'; ?>">
+            <div class="wplf-attempts-notice">
                 <p>
-                    ⚠️ <strong>Password errata.</strong> Tentativi rimanenti: <strong><?php echo esc_html($remaining_attempts); ?>/<?php echo esc_html($max_attempts); ?></strong>
+                    Password errata. Tentativi rimanenti: <strong><?php echo esc_html($remaining_attempts); ?>/<?php echo esc_html($max_attempts); ?></strong>
                 </p>
                 <?php if ($remaining_attempts <= 2): ?>
                     <p class="wplf-attempts-hint">
-                        Attenzione: se sbagli di nuovo dovrai procedere con una nuova verifica.<br>
-                        <!-- <a href="<?php echo esc_url(wp_lostpassword_url()); ?>">Password dimenticata?</a> -->
+                        Se sbagli di nuovo dovrai procedere con una nuova verifica.
                     </p>
                 <?php endif; ?>
             </div>
@@ -99,14 +98,12 @@ class WPLF_Login_Enhancer {
             
             if (isNaN(remaining) || remaining <= 0) {
                 msg.innerHTML = 'Tempo scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
-                msg.parentElement.className = 'wplf-token-notice wplf-expired';
                 return;
             }
             
             function updateCountdown() {
                 if (remaining <= 0) {
                     msg.innerHTML = 'Tempo scaduto. <a href="<?php echo esc_url(wp_login_url()); ?>">Ripeti verifica</a>';
-                    msg.parentElement.className = 'wplf-token-notice wplf-expired';
                     return;
                 }
                 
@@ -117,11 +114,6 @@ class WPLF_Login_Enhancer {
                 var formattedTime = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
                 
                 msg.innerHTML = 'Verifica completata. Hai <strong>' + formattedTime + '</strong> rimanent' + (remaining == 1 ? 'e' : 'i') + '.';
-                
-                // Cambia colore quando mancano meno di 60 secondi
-                if (remaining <= 60) {
-                    msg.parentElement.className = 'wplf-token-notice wplf-warning';
-                }
                 
                 remaining--;
                 setTimeout(updateCountdown, 1000);
@@ -146,79 +138,48 @@ class WPLF_Login_Enhancer {
         ?>
         <style>
         .wplf-token-notice {
-            background: #f0f0f0ff;
-            border: 1px solid #c8c8c8ff;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
             border-radius: 3px;
-            padding: 15px !important;
-            margin-bottom: 20px !important;
+            padding: 12px 15px !important;
+            margin-bottom: 16px !important;
             text-align: center;
-            transition: all 0.3s ease;
         }
         
         .wplf-token-notice p {
             margin: 0;
-            color: #525252ff;
+            color: #444;
             font-size: 14px;
             line-height: 1.5;
         }
         
         .wplf-token-notice strong {
-            color: #525252ff;
-            font-size: 16px;
+            color: #000;
             font-weight: 600;
-            display: inline-block;
-            min-width: 45px;
-            text-align: center;
         }
         
-        /* Stato warning (< 60 secondi) */
-        .wplf-token-notice.wplf-warning {
-            background: #fff3cd;
-            border-color: #ff8707ff;
-            animation: pulse-warning 1s ease-in-out infinite;
-        }
-        
-        .wplf-token-notice.wplf-warning p {
-            color: #525252ff;
-        }
-        
-        .wplf-token-notice.wplf-warning strong {
-            color: #525252ff;
-        }
-        
-        /* Stato scaduto */
-        .wplf-token-notice.wplf-expired {
-            background: #ff0000ff;
-            border-color: #ff0000ff;
-        }
-        
-        .wplf-token-notice.wplf-expired p {
-            color: #ffffffff;
-        }
-        
-        .wplf-token-notice.wplf-expired a {
-            color: #ffffffff;
+        .wplf-token-notice a {
+            color: #0073aa;
             text-decoration: underline;
-            font-weight: 600;
         }
         
-        .wplf-token-notice.wplf-expired a:hover {
-            color: #ffffffff;
+        .wplf-token-notice a:hover {
+            color: #005177;
         }
         
         /* Box tentativi password */
         .wplf-attempts-notice {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-left: 3px solid #dc3545;
             border-radius: 3px;
             padding: 12px 15px !important;
-            margin-bottom: 20px !important;
-            text-align: left;
+            margin-bottom: 16px !important;
         }
         
         .wplf-attempts-notice p {
             margin: 0 0 8px 0;
-            color: #856404;
+            color: #444;
             font-size: 14px;
             line-height: 1.5;
         }
@@ -229,92 +190,31 @@ class WPLF_Login_Enhancer {
         
         .wplf-attempts-notice strong {
             font-weight: 600;
+            color: #000;
         }
         
         .wplf-attempts-notice a {
-            color: #856404;
+            color: #0073aa;
             text-decoration: underline;
-            font-weight: 600;
         }
         
         .wplf-attempts-notice a:hover {
-            color: #533f03;
-        }
-        
-        /* Stato critico (ultimi 2 tentativi) */
-        .wplf-attempts-notice.wplf-attempts-critical {
-            background: #f8d7da;
-            border-color: #dc3545;
-            animation: pulse-critical 1.5s ease-in-out infinite;
-        }
-        
-        .wplf-attempts-notice.wplf-attempts-critical p {
-            color: #721c24;
-        }
-        
-        .wplf-attempts-notice.wplf-attempts-critical a {
-            color: #721c24;
-        }
-        
-        .wplf-attempts-notice.wplf-attempts-critical a:hover {
-            color: #491217;
+            color: #005177;
         }
         
         .wplf-attempts-hint {
             font-size: 13px;
+            color: #666;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Stato errore (token bruciato) */
-        .wplf-attempts-notice.wplf-attempts-error {
-            background: #f8d7da;
-            border-color: #dc3545;
-        }
-        
-        .wplf-attempts-notice.wplf-attempts-error p {
-            color: #721c24;
-            font-size: 15px;
-        }
-        
-        .wplf-attempts-notice.wplf-attempts-error a {
-            color: #721c24;
-        }
-        
-        @keyframes pulse-warning {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.02);
-            }
-        }
-        
-        @keyframes pulse-critical {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
-            50% {
-                transform: scale(1.01);
-                box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
-            }
+            border-top: 1px solid #eee;
         }
         
         /* Responsive */
         @media screen and (max-width: 480px) {
-            .wplf-token-notice {
-                padding: 12px;
-                font-size: 13px;
-            }
-            
-            .wplf-token-notice strong {
-                font-size: 15px;
-            }
-            
+            .wplf-token-notice,
             .wplf-attempts-notice {
-                padding: 10px 12px;
+                padding: 10px 12px !important;
                 font-size: 13px;
             }
         }
