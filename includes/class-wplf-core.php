@@ -241,6 +241,13 @@ class WPLF_Core {
                 $minutes_remaining = ceil($ttl / 60);
                 
                 $this->logger->log_attempt($username, 'rate_limited', 'Rate limit verifica username superato');
+                
+                // Verifica se bloccare IP anche per rate limit verifica username
+                if ($this->ip_blocker->check_and_block($client_ip, $this->logger)) {
+                    wp_send_json_error('Troppi tentativi falliti. Il tuo IP è stato bloccato per ' . 
+                        get_option('wplf_ip_block_duration', 72) . ' ore.');
+                }
+                
                 wp_send_json_error('Troppi tentativi di verifica. Riprova tra ' . $minutes_remaining . ' minut' . ($minutes_remaining == 1 ? 'o' : 'i'));
             }
         }
