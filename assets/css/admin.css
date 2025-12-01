@@ -228,21 +228,22 @@
     gap: 15px;
     margin: 15px 0;
     padding: 15px;
-    background: #f9fafb;
+    background: #fff;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    border-left: 3px solid #667eea;
 }
 
 .wplf-step-number {
     width: 32px;
     height: 32px;
     border-radius: 4px;
-    background: #667eea;
-    color: #fff;
+    background: #f7f7f7;
+    color: #1d2327;
+    border: 1px solid #ddd;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     flex-shrink: 0;
 }
@@ -259,7 +260,8 @@
 .wplf-protection-level {
     margin: 15px 0;
     padding: 15px;
-    background: #f9fafb;
+    background: #fff;
+    border: 1px solid #ddd;
     border-radius: 4px;
 }
 
@@ -302,9 +304,10 @@
 }
 
 .wplf-config-table th {
-    background: #f7fafc;
+    background: #fff;
     font-weight: 600;
-    color: #2d3748;
+    color: #1d2327;
+    border-bottom: 2px solid #ddd;
 }
 
 .wplf-config-table code {
@@ -312,29 +315,28 @@
     border: 1px solid #e2e8f0;
 }
 
-/* Warning and Info Cards */
+/* Warning and Info Cards - Minimal Style */
 .wplf-warning-card {
-    border-left: 4px solid #ed8936;
-    background: #fffaf0;
+    border: 1px solid #ddd;
+    background: #fff;
 }
 
 .wplf-warning-card h2 {
-    color: #dd6b20;
+    color: #1d2327;
 }
 
 .wplf-info-card {
-    border-left: 4px solid #4299e1;
-    background: #ebf8ff;
+    border: 1px solid #ddd;
+    background: #fff;
 }
 
 .wplf-info-card h2 {
-    color: #2b6cb0;
+    color: #1d2327;
 }
 
 .wplf-info-card a {
-    color: #2b6cb0;
+    color: #0073aa;
     text-decoration: none;
-    font-weight: 600;
 }
 
 .wplf-info-card a:hover {

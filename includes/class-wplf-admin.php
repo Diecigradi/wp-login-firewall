@@ -542,10 +542,10 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>🛡️ Tre Livelli di Protezione Integrati</h2>
+                    <h2>Tre Livelli di Protezione Integrati</h2>
                     
                     <div class="wplf-protection-level">
-                        <h3>🔄 Livello 1: Rate Limiting Dual-Layer</h3>
+                        <h3>Livello 1: Rate Limiting Dual-Layer</h3>
                         <p><strong>Sistema doppio per massima protezione:</strong></p>
                         
                         <h4>A) Rate Limit Verifica Username</h4>
@@ -565,7 +565,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3>🔥 Livello 2: Token Burning (Password Attempts)</h3>
+                        <h3>Livello 2: Token Burning (Password Attempts)</h3>
                         <ul>
                             <li><strong>Limite:</strong> 3 tentativi password per token (configurabile 3-20)</li>
                             <li><strong>Meccanismo:</strong> Ogni password errata incrementa contatore nel token transient</li>
@@ -577,7 +577,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3>⛔ Livello 3: Blocco IP Automatico</h3>
+                        <h3>Livello 3: Blocco IP Automatico</h3>
                         <ul>
                             <li><strong>Soglia:</strong> 5 tentativi falliti nell'ultima ora (configurabile)</li>
                             <li><strong>Conteggio:</strong> Include status <code>failed</code> + <code>rate_limited</code></li>
@@ -590,7 +590,7 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3>✅ Whitelist Amministratori (Protezione Lockout)</h3>
+                        <h3>Whitelist Amministratori (Protezione Lockout)</h3>
                         <ul>
                             <li><strong>Protezione:</strong> Gli admin con capability <code>manage_options</code> non vengono mai bloccati</li>
                             <li><strong>Bypass completo:</strong> Rate limit azzerato, IP sbloccato se presente in blacklist</li>
@@ -603,13 +603,13 @@ class WPLF_Admin {
                     </div>
                     
                     <div class="wplf-protection-level">
-                        <h3>📊 Logging Completo & Audit Trail</h3>
+                        <h3>Logging Completo & Audit Trail</h3>
                         <p><strong>7 Status Types tracciati:</strong></p>
                         <ul>
                             <li><code>success</code> - Username verificato correttamente (badge verde "Verifica OK")</li>
-                            <li><code>login_success</code> - Login WordPress completato (badge verde "Login Riuscito") <span style="color: #d63638; font-weight: bold;">NUOVO</span></li>
-                            <li><code>password_failed</code> - Password errata con contatore (badge giallo "Password Errata") <span style="color: #d63638; font-weight: bold;">NUOVO</span></li>
-                            <li><code>token_burned</code> - Token invalidato dopo N tentativi (badge rosso "Token Bruciato") <span style="color: #d63638; font-weight: bold;">NUOVO</span></li>
+                            <li><code>login_success</code> - Login WordPress completato (badge "Login Riuscito")</li>
+                            <li><code>password_failed</code> - Password errata con contatore (badge "Password Errata")</li>
+                            <li><code>token_burned</code> - Token invalidato dopo N tentativi (badge "Token Bruciato")</li>
                             <li><code>failed</code> - Username non trovato o credenziali invalide (badge rosso "Fallito")</li>
                             <li><code>rate_limited</code> - Superato rate limit (badge giallo "Rate Limited")</li>
                             <li><code>blocked</code> - Tentativo da IP bloccato (badge rosso "Bloccato")</li>
@@ -620,7 +620,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>📋 Status dei Log - Legenda Completa</h2>
+                    <h2>Status dei Log - Legenda Completa</h2>
                     <table class="wplf-status-table">
                         <thead>
                             <tr>
@@ -670,7 +670,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>⚙️ Configurazione Tecnica (Tutte le Impostazioni)</h2>
+                    <h2>Configurazione Tecnica (Tutte le Impostazioni)</h2>
                     <table class="wplf-config-table">
                         <thead>
                             <tr>
@@ -753,7 +753,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>🔐 Analisi Sicurezza - Prima vs Dopo</h2>
+                    <h2>Analisi Sicurezza - Prima vs Dopo</h2>
                     <table class="wplf-config-table">
                         <thead>
                             <tr>
@@ -765,41 +765,41 @@ class WPLF_Admin {
                         <tbody>
                             <tr>
                                 <td><strong>Username Enumeration</strong></td>
-                                <td>❌ Infiniti tentativi possibili, risposta diversa per user esistente/inesistente</td>
-                                <td>✅ Max 3 richieste/30 min, messaggio generico, delay randomizzato, blocco IP dopo 5 tentativi</td>
+                                <td>Infiniti tentativi possibili, risposta diversa per user esistente/inesistente</td>
+                                <td>Max 3 richieste/30 min, messaggio generico, delay randomizzato, blocco IP dopo 5 tentativi</td>
                             </tr>
                             <tr>
                                 <td><strong>Password Brute Force</strong></td>
-                                <td>❌ ~180 password/ora testabili su singolo username</td>
-                                <td>✅ Max 3 password per token → token burned → nuova verifica username → Max 9 password/30 min → IP bloccato 72h</td>
+                                <td>~180 password/ora testabili su singolo username</td>
+                                <td>Max 3 password per token → token burned → nuova verifica username → Max 9 password/30 min → IP bloccato 72h</td>
                             </tr>
                             <tr>
                                 <td><strong>Loop Infiniti Verifica</strong></td>
-                                <td>❌ Non applicabile (WordPress non ha verifica separata)</td>
-                                <td>✅ Rate limit dedicato 3/30 min → blocco temporaneo → blocco IP persistente</td>
+                                <td>Non applicabile (WordPress non ha verifica separata)</td>
+                                <td>Rate limit dedicato 3/30 min → blocco temporaneo → blocco IP persistente</td>
                             </tr>
                             <tr>
                                 <td><strong>Attacco Distribuito (Botnet)</strong></td>
-                                <td>❌ Ogni IP ha accesso illimitato</td>
-                                <td>✅ Ogni IP limitato indipendentemente, blocco automatico 72h, audit trail completo</td>
+                                <td>Ogni IP ha accesso illimitato</td>
+                                <td>Ogni IP limitato indipendentemente, blocco automatico 72h, audit trail completo</td>
                             </tr>
                             <tr>
                                 <td><strong>Timing Attack</strong></td>
-                                <td>❌ Tempo risposta rivela username esistente</td>
-                                <td>✅ Delay randomizzato 200-500ms, messaggio identico, nessuna info leak</td>
+                                <td>Tempo risposta rivela username esistente</td>
+                                <td>Delay randomizzato 200-500ms, messaggio identico, nessuna info leak</td>
                             </tr>
                             <tr>
                                 <td><strong>Admin Lockout</strong></td>
-                                <td>⚠️ Plugin sicurezza possono bloccare admin</td>
-                                <td>✅ Whitelist automatica admin, bypass rate limit, auto-sblocco IP</td>
+                                <td>Plugin sicurezza possono bloccare admin</td>
+                                <td>Whitelist automatica admin, bypass rate limit, auto-sblocco IP</td>
                             </tr>
                         </tbody>
                     </table>
-                    <p style="margin-top: 15px;"><strong>Riduzione superficie attacco:</strong> <span style="color: #00a32a; font-weight: bold; font-size: 18px;">~92%</span> (da ~180 password/ora a max 9/30 min con blocco IP garantito)</p>
+                    <p style="margin-top: 15px;"><strong>Riduzione superficie attacco:</strong> ~92% (da ~180 password/ora a max 9/30 min con blocco IP garantito)</p>
                 </div>
                 
-                <div class="wplf-help-card wplf-warning-card">
-                    <h2>⚠️ Note Importanti</h2>
+                <div class="wplf-help-card">
+                    <h2>Note Importanti</h2>
                     <ul>
                         <li><strong>Backup:</strong> Effettua sempre un backup completo prima di installare/aggiornare il plugin</li>
                         <li><strong>Admin Lockout:</strong> Gli amministratori sono automaticamente esclusi da tutti i blocchi (whitelist attiva di default)</li>
@@ -814,8 +814,8 @@ class WPLF_Admin {
                     </ul>
                 </div>
                 
-                <div class="wplf-help-card wplf-info-card">
-                    <h2>ℹ️ Informazioni Plugin</h2>
+                <div class="wplf-help-card">
+                    <h2>Informazioni Plugin</h2>
                     <p><strong>Nome:</strong> WP Login Firewall - Security Hardening</p>
                     <p><strong>Versione:</strong> <?php echo WPLF_VERSION; ?></p>
                     <p><strong>Release:</strong> Security Hardening Release (Rate Limit + Token Burning + Logging Completo)</p>
@@ -838,7 +838,7 @@ class WPLF_Admin {
                 </div>
                 
                 <div class="wplf-help-card">
-                    <h2>📖 FAQ - Domande Frequenti</h2>
+                    <h2>FAQ - Domande Frequenti</h2>
                     
                     <h3>Qual è la differenza tra "Limite Tentativi Login Standard" e "Limite Richieste Verifica"?</h3>
                     <p><strong>Limite Tentativi Login Standard:</strong> Sistema legacy che conta tentativi dopo username non trovato. Protezione residua aggiuntiva.</p>
