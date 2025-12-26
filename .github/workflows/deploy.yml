@@ -19,4 +19,4 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "."
-          target: "/var/www/vhosts/roomzero.net/theme.roomzero.net/wp-content/plugins/wp-login-firewall-3.1.0" # La cartella del sito sulla VPS
+          target: "/var/www/vhosts/roomzero.net/theme.roomzero.net/wp-content/plugins/wp-login-firewall-3.1.0" # La cartella del sito sulla VPS.
