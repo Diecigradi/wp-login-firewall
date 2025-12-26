@@ -1,0 +1,22 @@
+name: Deploy su VPS IONOS
+
+on:
+  push:
+    branches:
+      - main  # Si attiva ogni volta che carichi su questo ramo
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v3
+
+      - name: Sincronizzazione file via SSH
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "."
+          target: "/var/www/vhosts/roomzero.net/theme.roomzero.net/wp-content/plugins/wp-login-firewall-3.1.0" # La cartella del sito sulla VPS
