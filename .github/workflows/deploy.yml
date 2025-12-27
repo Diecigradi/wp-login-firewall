@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Si attiva ogni volta che carichi su questo ramo
+      - development-license-and-updates-function  # Branch sviluppo licenze e aggiornamenti
 
 jobs:
   deploy:
