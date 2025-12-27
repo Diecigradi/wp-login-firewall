@@ -137,4 +137,4 @@ class WP_Login_Firewall {
     }
 }
 // Avvia il plugin - metti questa riga ALLA FINE del file principale
-new WP_Login_Firewall();
+// new WP_Login_Firewall();
