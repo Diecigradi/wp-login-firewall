@@ -98,8 +98,8 @@ class WP_Login_Firewall {
     public function __construct() {
         // Inizializza License Manager
         $this->license_manager = new RoomZero_License_Manager(
-            wp-login-firewall,
-            WP Login Firewall
+            'wp-login-firewall', // Plugin slug
+            'WP Login Firewall', // Plugin name
         );
         
         // Aggiungi pagina licenza
@@ -117,8 +117,8 @@ class WP_Login_Firewall {
         
         $this->updater = new RoomZero_Plugin_Updater(
             __FILE__,
-            wp-login-firewall,
-            WP Login Firewall,
+            'wp-login-firewall', // Plugin slug
+            'WP Login Firewall', // Plugin name
             $license_key
         );
     }
