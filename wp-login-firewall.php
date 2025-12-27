@@ -20,17 +20,8 @@ if (!defined('ABSPATH')) {
 
 // Definisce costanti del plugin
 define('WPLF_VERSION', '3.1.0');
-
-// License Manager constants
-define('WPLF_SLUG', 'wp-login-firewall');  // ⚠️ Identico allo slug nel License Manager
-define('WPLF_NAME', 'WP Login Firewall');
-
 define('WPLF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
-
-// Carica la classe per la gestione licenze e aggiornamenti
-//require_once plugin_dir_path(__FILE__) . 'includes/class-roomzero-license.php';
-//require_once plugin_dir_path(__FILE__) . 'includes/class-roomzero-updater.php';
 
 // Carica la classe database
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-database.php';
@@ -88,53 +79,3 @@ register_deactivation_hook(__FILE__, function() {
     $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_wplf_%'");
     $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_wplf_%'");
 });
-
-// Inizializza License Manager e Updater
-
-class WP_Login_Firewall {
-    private $license_manager;
-    private $updater;
-    
-    public function __construct() {
-        // Inizializza License Manager
-        $this->license_manager = new RoomZero_License_Manager(
-            'wp-login-firewall', // Plugin slug
-            'WP Login Firewall', // Plugin name
-        );
-        
-        // Aggiungi pagina licenza
-        add_action('admin_menu', array($this->license_manager, 'add_license_page'));
-        
-        // Inizializza Updater
-        add_action('admin_init', array($this, 'init_updater'));
-        
-        // Carica funzionalità solo se licenza valida
-        add_action('init', array($this, 'init'));
-    }
-    
-    public function init_updater() {
-        $license_key = $this->license_manager->get_license_key();
-        
-        $this->updater = new RoomZero_Plugin_Updater(
-            __FILE__,
-            'wp-login-firewall', // Plugin slug
-            'WP Login Firewall', // Plugin name
-            $license_key
-        );
-    }
-    
-    public function init() {
-        if (!$this->license_manager->is_license_valid()) {
-            return; // Licenza non valida - blocca funzionalità
-        }
-        
-        // ✅ LICENZA VALIDA - Carica funzionalità
-        $this->load_features();
-    }
-    
-    private function load_features() {
-        // Tutte le funzionalità del plugin
-    }
-}
-// Avvia il plugin - metti questa riga ALLA FINE del file principale
-new WP_Login_Firewall();
