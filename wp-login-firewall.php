@@ -29,8 +29,8 @@ define('WPLF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WPLF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Carica la classe per la gestione licenze e aggiornamenti
-require_once plugin_dir_path(__FILE__) . 'includes/class-roomzero-license.php';
-require_once plugin_dir_path(__FILE__) . 'includes/class-roomzero-updater.php';
+require_once WPLF_PLUGIN_DIR . 'includes/class-roomzero-license.php';
+require_once WPLF_PLUGIN_DIR . 'includes/class-roomzero-updater.php';
 
 // Carica la classe database
 require_once WPLF_PLUGIN_DIR . 'includes/class-wplf-database.php';
